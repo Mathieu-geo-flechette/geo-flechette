@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Geo Fléchette France 🇫🇷</title>
+
+<style>
+body{
+  font-family: Arial;
+  margin:0;
+  padding:12px;
+  background:#111;
+  color:#eee;
+}
+
+h2{ margin:6px 0 10px; }
+
+.card{
+  background:#1a1a1a;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:10px;
+  border:1px solid #333;
+}
+
+#views{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.panel{
+  flex:1;
+  min-width:320px;
+}
+
+canvas{
+  width:100%;
+  border:1px solid #444;
+  border-radius:8px;
+  display:block;
+  margin-bottom:10px;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  background:#222;
+  color:#eee;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+button:hover{ background:#333; }
+
+#status{ color:#aaa; margin-bottom:10px; }
+
+#output{ white-space:pre-line; }
+
+a{ color:#4ea3ff; }
+</style>
+
+<script>
+    let cvReady = false;
+  
+    function onOpenCvReady() {
+      cvReady = true;
+      document.getElementById("status").innerText = "OpenCV prêt";
+    }
+</script>
+
+<script>
+    let Module = {
+      onRuntimeInitialized() {
+        onOpenCvReady();
+      }
+    };
+  </script>
+  
+  <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js"></script>
+
+</head>
+
+<body>
+
+<h2>🎯 Geo Fléchette France 🇫🇷</h2>
+
+<div class="card">
+1️⃣ Image avec 4 hexagones rouges aux coins<br>
+2️⃣ Clique impact fléchette<br>
+3️⃣ Homographie automatique<br>
+4️⃣ Ville + GPS + Google Maps
+</div>
+
+<div id="status" class="card">Chargement OpenCV...</div>
+
+<input
+  type="file"
+  id="fileInput"
+  accept="image/*,.heic,.heif"
+/>
+
+<div id="views">
+
+    <div class="panel">
+      <div class="card"><b>📍 Original</b></div>
+      <canvas id="canvas"></canvas>
+    </div>
+  
+    <div class="panel">
+      <div class="card"><b>🗺️ Résultat</b></div>
+      <canvas id="canvasWarp"></canvas>
+    </div>
+  
+  </div>
+  
+  <div class="card">
+    <div class="buttonRow">
+  
+      <button id="retryBtn">
+        🎯 Reprendre l'impact
+      </button>
+  
+      <button id="resetBtn">
+        🔄 Nouvelle partie
+      </button>
+  
+    </div>
+  </div>
+  
+  <div id="output" class="card"></div>
+
+</div>
+
+<div id="output" class="card"></div>
+
+<script>
+let canvas=document.getElementById("canvas");
+let ctx=canvas.getContext("2d");
+
+let warpCanvas=document.getElementById("canvasWarp");
+let wctx=warpCanvas.getContext("2d");
+
+let img=new Image();
+
+let clickPoint=null;
+let Hmatrix=null;
+
+
+
+/* =========================
+   LOAD IMAGE
+========================= */
+document.getElementById("fileInput").onchange = async (e)=>{
+
+let file = e.target.files[0];
+if(!file) return;
+
+try{
+
+  let imageBlob = file;
+
+  /* =========================
+     HEIC -> JPEG
+  ========================= */
+  if(
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    file.name.toLowerCase().endsWith(".heic") ||
+    file.name.toLowerCase().endsWith(".heif")
+  ){
+
+    document.getElementById("status").innerText =
+      "Conversion HEIC → JPEG...";
+
+    imageBlob = await heic2any({
+      blob:file,
+      toType:"image/jpeg",
+      quality:0.95
+    });
+
+    document.getElementById("status").innerText =
+      "Image convertie";
+  }
+
+  img.onload = ()=>{
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    warpCanvas.width = img.width;
+    warpCanvas.height = img.height;
+
+    ctx.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    ctx.drawImage(
+      img,
+      0,
+      0
+    );
+  };
+
+  img.src = URL.createObjectURL(imageBlob);
+
+}
+catch(err){
+
+  console.error(err);
+
+  alert(
+    "Impossible de lire cette image."
+  );
+}
+};
+
+/* =========================
+   CLICK IMPACT
+========================= */
+canvas.addEventListener("click",(e)=>{
+  let r=canvas.getBoundingClientRect();
+
+  let x=(e.clientX-r.left)*(canvas.width/r.width);
+  let y=(e.clientY-r.top)*(canvas.height/r.height);
+
+  clickPoint={x,y};
+
+  ctx.drawImage(img,0,0);
+  ctx.fillStyle="red";
+  ctx.beginPath();
+  ctx.arc(x,y,12,0,Math.PI*2);
+  ctx.fill();
+
+  run();
+});
+
+/* =========================
+   DETECT HEXAGONES ROUGES
+========================= */
+function orderCorners(pts){
+
+let sum = pts.map(p=>p.x+p.y);
+let diff = pts.map(p=>p.x-p.y);
+
+let tl = pts[sum.indexOf(Math.min(...sum))];
+let br = pts[sum.indexOf(Math.max(...sum))];
+
+let tr = pts[diff.indexOf(Math.max(...diff))];
+let bl = pts[diff.indexOf(Math.min(...diff))];
+
+return [tl,tr,br,bl];
+}
+
+function detectCorners(src){
+
+let hsv = new cv.Mat();
+
+cv.cvtColor(src,hsv,cv.COLOR_RGBA2RGB);
+cv.cvtColor(hsv,hsv,cv.COLOR_RGB2HSV);
+
+/* =====================
+   DETECTION VERT
+===================== */
+
+let low = new cv.Mat(
+  hsv.rows,
+  hsv.cols,
+  hsv.type(),
+  [35,80,80,0]
+);
+
+let high = new cv.Mat(
+  hsv.rows,
+  hsv.cols,
+  hsv.type(),
+  [90,255,255,255]
+);
+
+let mask = new cv.Mat();
+
+cv.inRange(
+  hsv,
+  low,
+  high,
+  mask
+);
+
+/* =====================
+   NETTOYAGE
+===================== */
+
+let kernel = cv.getStructuringElement(
+  cv.MORPH_RECT,
+  new cv.Size(9,9)
+);
+
+cv.morphologyEx(
+  mask,
+  mask,
+  cv.MORPH_CLOSE,
+  kernel
+);
+
+/* =====================
+   CONTOURS
+===================== */
+
+let contours = new cv.MatVector();
+let hierarchy = new cv.Mat();
+
+cv.findContours(
+  mask,
+  contours,
+  hierarchy,
+  cv.RETR_EXTERNAL,
+  cv.CHAIN_APPROX_SIMPLE
+);
+
+let bestQuad = null;
+let bestArea = 0;
+
+for(let i=0;i<contours.size();i++){
+
+  let cnt = contours.get(i);
+
+  let area = cv.contourArea(cnt);
+
+  if(area < 5000)
+    continue;
+
+  let peri = cv.arcLength(
+    cnt,
+    true
+  );
+
+  let approx = new cv.Mat();
+
+  cv.approxPolyDP(
+    cnt,
+    approx,
+    0.02 * peri,
+    true
+  );
+
+  if(
+    approx.rows === 4 &&
+    area > bestArea
+  ){
+    bestArea = area;
+    bestQuad = approx;
+  }
+}
+
+if(!bestQuad){
+  return null;
+}
+
+let d = bestQuad.data32S;
+
+let pts = [
+  {x:d[0],y:d[1]},
+  {x:d[2],y:d[3]},
+  {x:d[4],y:d[5]},
+  {x:d[6],y:d[7]}
+];
+
+pts = orderCorners(pts);
+
+return pts;
+}
+
+
+
+/* =========================
+   MAIN PIPELINE
+========================= */
+async function run(){
+
+    if (!cvReady) {
+        alert("OpenCV pas encore chargé");
+    return;
+    }
+
+  let src=cv.imread(img);
+
+  let corners=detectCorners(src);
+
+  if(!corners){
+  document.getElementById("output").innerText =
+    "❌ Cadre rouge non détecté";
+  return;
+}
+
+  let S=Math.min(canvas.width,canvas.height);
+
+  let srcPts=cv.matFromArray(4,1,cv.CV_32FC2,[
+    corners[0].x,corners[0].y,
+    corners[1].x,corners[1].y,
+    corners[2].x,corners[2].y,
+    corners[3].x,corners[3].y
+  ]);
+
+  let dstPts=cv.matFromArray(4,1,cv.CV_32FC2,[
+    0,0,
+    S,0,
+    S,S,
+    0,S
+  ]);
+
+  Hmatrix=cv.getPerspectiveTransform(srcPts,dstPts);
+
+  /* =========================
+     IMPACT TRANSFORM
+  ========================= */
+  let p=cv.matFromArray(1,1,cv.CV_32FC2,[clickPoint.x,clickPoint.y]);
+  let out=new cv.Mat();
+
+  cv.perspectiveTransform(p,out,Hmatrix);
+
+  let x=out.data32F[0];
+  let y=out.data32F[1];
+
+  let warped=new cv.Mat();
+  cv.warpPerspective(src,warped,Hmatrix,new cv.Size(S,S));
+
+  /* =========================
+     GPS FRANCE
+  ========================= */
+  const FR={
+    latMin:41.0,
+    latMax:51.5,
+    lonMin:-5.5,
+    lonMax:9.8
+  };
+
+  let lon=FR.lonMin+(x/S)*(FR.lonMax-FR.lonMin);
+  let lat=FR.latMax-(y/S)*(FR.latMax-FR.latMin);
+
+  /* =========================
+     GEOCODING
+  ========================= */
+  let j=await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+    {headers:{"User-Agent":"dart"}}
+  ).then(r=>r.json());
+
+  let city=
+    j.address?.city ||
+    j.address?.town ||
+    j.address?.village ||
+    "Lieu inconnu";
+
+  /* =========================
+     DRAW RESULT
+  ========================= */
+  cv.circle(warped,new cv.Point(x,y),14,[0,0,255,255],-1);
+
+  cv.putText(
+    warped,
+    city,
+    new cv.Point(x+10,y-10),
+    cv.FONT_HERSHEY_SIMPLEX,
+    1.2,
+    [0,255,0,255],
+    3
+  );
+
+  cv.imshow("canvasWarp",warped);
+
+  let maps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city+" France")}`;
+
+  document.getElementById("output").innerHTML=`
+🎯 Impact détecté
+
+🏙️ Ville : ${city}
+
+📍 GPS :
+${lat.toFixed(6)}, ${lon.toFixed(6)}
+
+👉 <a target="_blank" href="${maps}">Google Maps</a>
+`;
+
+  src.delete();
+  p.delete();
+  out.delete();
+  warped.delete();
+}
+
+/* =========================
+   REPRENDRE IMPACT
+========================= */
+document.getElementById("retryBtn").onclick=()=>{
+
+clickPoint = null;
+
+ctx.clearRect(
+  0,
+  0,
+  canvas.width,
+  canvas.height
+);
+
+ctx.drawImage(
+  img,
+  0,
+  0
+);
+
+wctx.clearRect(
+  0,
+  0,
+  warpCanvas.width,
+  warpCanvas.height
+);
+
+document.getElementById("output").innerHTML =
+  "👉 Cliquez sur le nouvel impact de fléchette.";
+};
+
+
+
+
+
+checkCV();
+</script>
+
+</body>
+</html>
