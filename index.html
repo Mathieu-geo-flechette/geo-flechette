@@ -68,7 +68,7 @@ a{ color:#4ea3ff; }
   
     function onOpenCvReady() {
       cvReady = true;
-      document.getElementById("status").innerText = "OpenCV prêt";
+      document.getElementById("status").remove();
     }
 </script>
 
@@ -90,19 +90,28 @@ a{ color:#4ea3ff; }
 <h2>🎯 Geo Fléchette France 🇫🇷</h2>
 
 <div class="card">
-1️⃣ Image avec 4 hexagones rouges aux coins<br>
-2️⃣ Clique impact fléchette<br>
-3️⃣ Homographie automatique<br>
-4️⃣ Ville + GPS + Google Maps
+🎯 Lance ta fléchette sur la carte<br>
+📸 Charge une photo de la cible<br>
+💥 Clique sur l’impact<br>
+🧭 L'application retrouve automatiquement la position<br>
+📍 Découvre la ville atteinte<br>
+🌍 Pars à sa découverte
 </div>
 
 <div id="status" class="card">Chargement OpenCV...</div>
+
+
+<label for="fileInput" class="uploadBtn">
+    📸 Charger une photo de la cible
+    </label>
 
 <input
   type="file"
   id="fileInput"
   accept="image/*,.heic,.heif"
 />
+
+
 
 <div id="views">
 
@@ -136,7 +145,6 @@ a{ color:#4ea3ff; }
 
 </div>
 
-<div id="output" class="card"></div>
 
 <script>
 let canvas=document.getElementById("canvas");
@@ -234,10 +242,12 @@ canvas.addEventListener("click",(e)=>{
   clickPoint={x,y};
 
   ctx.drawImage(img,0,0);
-  ctx.fillStyle="red";
-  ctx.beginPath();
-  ctx.arc(x,y,12,0,Math.PI*2);
-  ctx.fill();
+
+drawImpact(
+  ctx,
+  x,
+  y
+);
 
   run();
 });
@@ -377,6 +387,61 @@ pts = orderCorners(pts);
 return pts;
 }
 
+function drawCityName(ctx,text,x,y){
+
+let maxWidth =
+  warpCanvas.width - x - 20;
+
+let size = 48;
+
+do{
+
+  ctx.font = `bold ${size}px Arial`;
+
+  let w =
+    ctx.measureText(text).width;
+
+  if(w <= maxWidth)
+    break;
+
+  size -= 2;
+
+}while(size > 16);
+
+ctx.font = `bold ${size}px Arial`;
+
+ctx.strokeStyle = "black";
+ctx.lineWidth = Math.max(4,size/6);
+
+ctx.strokeText(text,x,y);
+
+ctx.fillStyle = "#FFD54F";
+ctx.strokeStyle = "#111";
+ctx.fillText(text,x,y);
+}
+
+function drawImpact(ctx,x,y){
+
+ctx.lineWidth = 5;
+ctx.strokeStyle = "#FF0000";
+
+// cercle extérieur
+ctx.beginPath();
+ctx.arc(x,y,30,0,Math.PI*2);
+ctx.stroke();
+
+// cercle intérieur
+ctx.beginPath();
+ctx.arc(x,y,18,0,Math.PI*2);
+ctx.stroke();
+
+// centre
+ctx.beginPath();
+ctx.arc(x,y,6,0,Math.PI*2);
+
+ctx.fillStyle = "#FF0000";
+ctx.fill();
+}
 
 
 /* =========================
@@ -395,7 +460,7 @@ async function run(){
 
   if(!corners){
   document.getElementById("output").innerText =
-    "❌ Cadre rouge non détecté";
+    "❌ Cadre vert non détecté, reprendre la photo de sorte que la cadre de la cible soit entièrement sur l'image.";
   return;
 }
 
@@ -457,35 +522,54 @@ async function run(){
     j.address?.town ||
     j.address?.village ||
     "Lieu inconnu";
+    let cityInfo = await getCityInfo(city);
+    let region =
+    j.address?.state ||
+    "Inconnue";
+
+let departement =
+  j.address?.county ||
+  "Inconnu";
 
   /* =========================
      DRAW RESULT
   ========================= */
-  cv.circle(warped,new cv.Point(x,y),14,[0,0,255,255],-1);
+  /*cv.circle(warped,new cv.Point(x,y),14,[0,0,255,255],-1);*/
 
-  cv.putText(
-    warped,
-    city,
-    new cv.Point(x+10,y-10),
-    cv.FONT_HERSHEY_SIMPLEX,
-    1.2,
-    [0,255,0,255],
-    3
-  );
 
   cv.imshow("canvasWarp",warped);
 
+drawImpact(
+  wctx,
+  x,
+  y
+);
+
+drawCityName(
+  wctx,
+  city,
+  x + 20,
+  y - 20
+);
+
   let maps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city+" France")}`;
 
-  document.getElementById("output").innerHTML=`
-🎯 Impact détecté
-
-🏙️ Ville : ${city}
-
-📍 GPS :
+ document.getElementById("output").innerHTML=`
+<h3>🎯 Impact détecté</h3>
+<h2>🏙️ ${city}</h2>
+🌍 Région : ${region}<br>
+🏛️ Département : ${departement}<br>
+${cityInfo ? `
+<b>${cityInfo.description}</b>
+${cityInfo.extract}<br>
+` : ""}
+📍 <b>Coordonnées GPS</b>
 ${lat.toFixed(6)}, ${lon.toFixed(6)}
+<br>
+👉 <a target="_blank" href="${maps}">
+Ouvrir dans Google Maps
+</a>
 
-👉 <a target="_blank" href="${maps}">Google Maps</a>
 `;
 
   src.delete();
@@ -493,6 +577,30 @@ ${lat.toFixed(6)}, ${lon.toFixed(6)}
   out.delete();
   warped.delete();
 }
+
+async function getCityInfo(city){
+    try{
+
+    let r = await fetch(
+        `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(city)}`
+    );
+
+    if(!r.ok) return null;
+
+    let j = await r.json();
+
+    return {
+        title: j.title,
+        description: j.description || "",
+        extract: j.extract || ""
+    };
+
+    }catch(e){
+
+    return null;
+    }
+}
+
 
 /* =========================
    REPRENDRE IMPACT
@@ -526,10 +634,6 @@ document.getElementById("output").innerHTML =
 };
 
 
-
-
-
-checkCV();
 </script>
 
 </body>
