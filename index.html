@@ -68,7 +68,7 @@ a{ color:#4ea3ff; }
   
     function onOpenCvReady() {
       cvReady = true;
-      document.getElementById("status").remove();
+      document.getElementById("status").style.display="none";
     }
 </script>
 
@@ -157,6 +157,9 @@ let img=new Image();
 
 let clickPoint=null;
 let Hmatrix=null;
+let warpedMap = null;
+
+let currentObjectURL = null;
 
 
 
@@ -185,18 +188,29 @@ try{
     document.getElementById("status").innerText =
       "Conversion HEIC → JPEG...";
 
-    imageBlob = await heic2any({
-      blob:file,
-      toType:"image/jpeg",
-      quality:0.95
-    });
+      imageBlob = await heic2any({
+  blob:file,
+  toType:"image/jpeg",
+  quality:0.95
+});
+
+if(Array.isArray(imageBlob)){
+  imageBlob = imageBlob[0];
+};
 
     document.getElementById("status").innerText =
       "Image convertie";
   }
 
   img.onload = ()=>{
+    if(img.width * img.height > 25000000){
 
+alert(
+  "Photo trop grande. Utilisez une photo de 12MP maximum."
+);
+
+return;
+}
     canvas.width = img.width;
     canvas.height = img.height;
 
@@ -217,8 +231,14 @@ try{
     );
   };
 
-  img.src = URL.createObjectURL(imageBlob);
+  if(currentObjectURL){
+  URL.revokeObjectURL(currentObjectURL);
+}
 
+currentObjectURL =
+  URL.createObjectURL(imageBlob);
+
+img.src = currentObjectURL;
 }
 catch(err){
 
@@ -242,14 +262,18 @@ canvas.addEventListener("click",(e)=>{
   clickPoint={x,y};
 
   ctx.drawImage(img,0,0);
-
+  
 drawImpact(
   ctx,
   x,
   y
 );
 
+ctx.drawImage(img,0,0);
+
+requestAnimationFrame(()=>{
   run();
+});
 });
 
 /* =========================
@@ -454,8 +478,18 @@ async function run(){
     return;
     }
 
-  let src=cv.imread(img);
+    let src;
 
+try{
+  src = cv.imread(canvas);
+}
+catch(e){
+
+  document.getElementById("output").innerHTML =
+    "❌ Impossible de lire cette photo";
+
+  return;
+}
   let corners=detectCorners(src);
 
   if(!corners){
