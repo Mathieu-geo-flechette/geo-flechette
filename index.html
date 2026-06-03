@@ -162,6 +162,35 @@ let warpedMap = null;
 let currentObjectURL = null;
 
 
+/* =========================
+    RESET GAME
+========================= */
+function resetGame(){
+
+clickPoint = null;
+Hmatrix = null;
+
+if(warpedMap){
+  warpedMap.delete();
+  warpedMap = null;
+}
+
+document.getElementById("output").innerHTML = "";
+
+ctx.clearRect(
+  0,
+  0,
+  canvas.width,
+  canvas.height
+);
+
+wctx.clearRect(
+  0,
+  0,
+  warpCanvas.width,
+  warpCanvas.height
+);
+}
 
 /* =========================
    LOAD IMAGE
@@ -170,6 +199,25 @@ document.getElementById("fileInput").onchange = async (e)=>{
 
 let file = e.target.files[0];
 if(!file) return;
+
+// Réinitialisation complète
+
+clickPoint = null;
+Hmatrix = null;
+
+if(warpedMap){
+    warpedMap.delete();
+    warpedMap = null;
+}
+
+document.getElementById("output").innerHTML = "";
+
+wctx.clearRect(
+    0,
+    0,
+    warpCanvas.width,
+    warpCanvas.height
+);
 
 try{
 
@@ -204,6 +252,8 @@ if(Array.isArray(imageBlob)){
 
   img.onload = ()=>{
     if(img.width * img.height > 25000000){
+
+resetGame();
 
 alert(
   "Photo trop grande. Utilisez une photo de 12MP maximum."
@@ -384,7 +434,7 @@ cv.bitwise_or(
 
 let kernel = cv.getStructuringElement(
   cv.MORPH_RECT,
-  new cv.Size(9,9)
+  new cv.Size(25,25)
 );
 
 cv.morphologyEx(
@@ -431,14 +481,31 @@ for(let i=0;i<contours.size();i++){
   cv.approxPolyDP(
     cnt,
     approx,
-    0.02 * peri,
+    0.05 * peri,
     true
   );
 
-  if(
-    approx.rows === 4 &&
-    area > bestArea
-  ){
+  let rect = cv.minAreaRect(cnt);
+
+let width = rect.size.width;
+let height = rect.size.height;
+
+let ratio =
+  Math.max(width,height) /
+  Math.min(width,height);
+
+if(
+  ratio < 1.3 &&
+  area > bestArea
+){
+  bestArea = area;
+
+  let vertices =
+    cv.RotatedRect.points(rect);
+
+  bestQuad = vertices;
+}
+{
     bestArea = area;
     bestQuad = approx;
   }
@@ -477,6 +544,25 @@ let pts = [
 
 pts = orderCorners(pts);
 
+hsv.delete();
+
+low1.delete();
+high1.delete();
+
+low2.delete();
+high2.delete();
+
+mask1.delete();
+mask2.delete();
+
+mask.delete();
+
+kernel.delete();
+contours.delete();
+hierarchy.delete();
+
+bestQuad.delete();
+
 return pts;
 }
 
@@ -512,25 +598,6 @@ ctx.fillStyle = "#FFD54F";
 ctx.strokeStyle = "#111";
 ctx.fillText(text,x,y);
 
-
-hsv.delete();
-
-low1.delete();
-high1.delete();
-
-low2.delete();
-high2.delete();
-
-mask1.delete();
-mask2.delete();
-
-mask.delete();
-
-kernel.delete();
-contours.delete();
-hierarchy.delete();
-
-bestQuad.delete();
 
 }
 
@@ -772,53 +839,22 @@ document.getElementById("output").innerHTML =
 ========================= */
 document.getElementById("resetBtn").onclick = ()=>{
 
-// variables
-clickPoint = null;
-Hmatrix = null;
+resetGame();
 
-if(warpedMap){
-  warpedMap.delete();
-  warpedMap = null;
-}
-
-// image
 img.src = "";
 
-// input fichier
 document.getElementById("fileInput").value = "";
 
-// canvas original
-ctx.clearRect(
-  0,
-  0,
-  canvas.width,
-  canvas.height
-);
-
-// canvas résultat
-wctx.clearRect(
-  0,
-  0,
-  warpCanvas.width,
-  warpCanvas.height
-);
-
-// remet les canvas à zéro
-canvas.width = 0;
-canvas.height = 0;
-
-warpCanvas.width = 0;
-warpCanvas.height = 0;
-
-// supprime l'URL blob
 if(currentObjectURL){
   URL.revokeObjectURL(currentObjectURL);
   currentObjectURL = null;
 }
 
-// vide le résultat
-document.getElementById("output").innerHTML = "";
+canvas.width = 0;
+canvas.height = 0;
 
+warpCanvas.width = 0;
+warpCanvas.height = 0;
 };
 
 
