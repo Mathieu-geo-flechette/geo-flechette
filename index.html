@@ -261,6 +261,13 @@ canvas.addEventListener("click",(e)=>{
 
   clickPoint={x,y};
 
+  ctx.clearRect(
+  0,
+  0,
+  canvas.width,
+  canvas.height
+    );
+
   ctx.drawImage(img,0,0);
   
 drawImpact(
@@ -268,8 +275,6 @@ drawImpact(
   x,
   y
 );
-
-ctx.drawImage(img,0,0);
 
 requestAnimationFrame(()=>{
   run();
@@ -304,26 +309,72 @@ cv.cvtColor(hsv,hsv,cv.COLOR_RGB2HSV);
    DETECTION VERT
 ===================== */
 
-let low = new cv.Mat(
+/* =====================
+   VERT CLAIR
+===================== */
+
+let low1 = new cv.Mat(
   hsv.rows,
   hsv.cols,
   hsv.type(),
-  [35,80,80,0]
+  [25,40,25,0]
 );
 
-let high = new cv.Mat(
+let high1 = new cv.Mat(
   hsv.rows,
   hsv.cols,
   hsv.type(),
-  [90,255,255,255]
+  [100,255,255,255]
 );
 
-let mask = new cv.Mat();
+/* =====================
+   VERT FONCÉ
+===================== */
+
+let low2 = new cv.Mat(
+  hsv.rows,
+  hsv.cols,
+  hsv.type(),
+  [20,15,10,0]
+);
+
+let high2 = new cv.Mat(
+  hsv.rows,
+  hsv.cols,
+  hsv.type(),
+  [110,255,120,255]
+);
+
+/* =====================
+   MASQUES
+===================== */
+
+let mask1 = new cv.Mat();
+let mask2 = new cv.Mat();
 
 cv.inRange(
   hsv,
-  low,
-  high,
+  low1,
+  high1,
+  mask1
+);
+
+cv.inRange(
+  hsv,
+  low2,
+  high2,
+  mask2
+);
+
+/* =====================
+   FUSION
+===================== */
+
+let mask = new cv.Mat();
+
+cv.bitwise_or(
+  mask1,
+  mask2,
   mask
 );
 
@@ -394,7 +445,25 @@ for(let i=0;i<contours.size();i++){
 }
 
 if(!bestQuad){
-  return null;
+
+hsv.delete();
+
+low1.delete();
+high1.delete();
+
+low2.delete();
+high2.delete();
+
+mask1.delete();
+mask2.delete();
+
+mask.delete();
+
+kernel.delete();
+contours.delete();
+hierarchy.delete();
+
+return null;
 }
 
 let d = bestQuad.data32S;
@@ -416,7 +485,7 @@ function drawCityName(ctx,text,x,y){
 let maxWidth =
   warpCanvas.width - x - 20;
 
-let size = 48;
+let size = 96;
 
 do{
 
@@ -430,7 +499,7 @@ do{
 
   size -= 2;
 
-}while(size > 16);
+}while(size > 32);
 
 ctx.font = `bold ${size}px Arial`;
 
@@ -442,27 +511,47 @@ ctx.strokeText(text,x,y);
 ctx.fillStyle = "#FFD54F";
 ctx.strokeStyle = "#111";
 ctx.fillText(text,x,y);
+
+
+hsv.delete();
+
+low1.delete();
+high1.delete();
+
+low2.delete();
+high2.delete();
+
+mask1.delete();
+mask2.delete();
+
+mask.delete();
+
+kernel.delete();
+contours.delete();
+hierarchy.delete();
+
+bestQuad.delete();
+
 }
 
 function drawImpact(ctx,x,y){
 
-ctx.lineWidth = 5;
+ctx.lineWidth = 20;
 ctx.strokeStyle = "#FF0000";
 
 // cercle extérieur
 ctx.beginPath();
-ctx.arc(x,y,30,0,Math.PI*2);
+ctx.arc(x,y,90,0,Math.PI*2);
 ctx.stroke();
 
 // cercle intérieur
 ctx.beginPath();
-ctx.arc(x,y,18,0,Math.PI*2);
+ctx.arc(x,y,54,0,Math.PI*2);
 ctx.stroke();
 
 // centre
 ctx.beginPath();
-ctx.arc(x,y,6,0,Math.PI*2);
-
+ctx.arc(x,y,18,0,Math.PI*2);
 ctx.fillStyle = "#FF0000";
 ctx.fill();
 }
@@ -481,8 +570,19 @@ async function run(){
     let src;
 
 try{
-  src = cv.imread(canvas);
-}
+    let tempCanvas = document.createElement("canvas");
+tempCanvas.width = img.width;
+tempCanvas.height = img.height;
+
+let tempCtx = tempCanvas.getContext("2d");
+
+tempCtx.drawImage(
+  img,
+  0,
+  0
+);
+
+src = cv.imread(tempCanvas);}
 catch(e){
 
   document.getElementById("output").innerHTML =
@@ -665,6 +765,60 @@ wctx.clearRect(
 
 document.getElementById("output").innerHTML =
   "👉 Cliquez sur le nouvel impact de fléchette.";
+};
+
+/* =========================
+   NOUVELLE PARTIE
+========================= */
+document.getElementById("resetBtn").onclick = ()=>{
+
+// variables
+clickPoint = null;
+Hmatrix = null;
+
+if(warpedMap){
+  warpedMap.delete();
+  warpedMap = null;
+}
+
+// image
+img.src = "";
+
+// input fichier
+document.getElementById("fileInput").value = "";
+
+// canvas original
+ctx.clearRect(
+  0,
+  0,
+  canvas.width,
+  canvas.height
+);
+
+// canvas résultat
+wctx.clearRect(
+  0,
+  0,
+  warpCanvas.width,
+  warpCanvas.height
+);
+
+// remet les canvas à zéro
+canvas.width = 0;
+canvas.height = 0;
+
+warpCanvas.width = 0;
+warpCanvas.height = 0;
+
+// supprime l'URL blob
+if(currentObjectURL){
+  URL.revokeObjectURL(currentObjectURL);
+  currentObjectURL = null;
+}
+
+// vide le résultat
+document.getElementById("output").innerHTML = "";
+
 };
 
 
