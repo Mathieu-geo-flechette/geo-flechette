@@ -1030,16 +1030,31 @@ Ouvrir dans Google Maps
 
 }else{
 
-document.getElementById("output").innerHTML = `
+ddocument.getElementById("output").innerHTML = `
 <h3>🍷 Destination du soir</h3>
 
 <h2>${nearest.city.nom}</h2>
 
-📍 ${nearest.city.adresse}<br>
+📍 ${nearest.city.adresse || ""}<br>
 
 🍽️ ${nearest.city.type || ""}<br>
 
-📏 ${nearest.distance.toFixed(2)} km
+📏 ${nearest.distance.toFixed(2)} km<br><br>
+
+<a
+  href="${nearest.city.maps}"
+  target="_blank"
+  style="
+    display:inline-block;
+    padding:10px 15px;
+    background:#2e7d32;
+    color:white;
+    text-decoration:none;
+    border-radius:8px;
+  "
+>
+🗺️ Ouvrir dans Google Maps
+</a>
 `;
 
 }
