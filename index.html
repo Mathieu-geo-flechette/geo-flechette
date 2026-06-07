@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Geo Fléchette France 🇫🇷</title>
 
+
+<div class="card">
+    
+    <b>🗺️ Carte :</b><br>
+    
+    <button id="modeFranceBtn">🇫🇷 France</button>
+    
+    <button id="modeLyonBtn">🍷 Lyon</button>
+    
+    </div>
+    
+    <div id="optionsCard" class="card"></div>
+
+
+
+
 <style>
 body{
   font-family: Arial;
@@ -166,7 +182,12 @@ a{ color:#4ea3ff; }
 </div>
 
 
+
+
 <script>
+/* =========================
+    DECLARATION VARIABLES
+========================= */
 let canvas=document.getElementById("canvas");
 let ctx=canvas.getContext("2d");
 
@@ -182,6 +203,7 @@ let warpedMap = null;
 let currentObjectURL = null;
 let villesDB = [];
 
+let currentMap = "france";
 
 /* =========================
     RESET GAME
@@ -644,27 +666,32 @@ ctx.fillStyle = "#FF0000";
 ctx.fill();
 }
 
+
 /* =====================
-   CHARGEMENT BDD VILLES
+   CHARGEMENT BDD
 ===================== */
-async function loadCities(){
+async function loadDatabase(){
+    try{
+if(currentMap === "france"){
 
-try{
+  villesDB =
+    await fetch("bdd_villes.json")
+    .then(r=>r.json());
 
-  villesDB = await fetch(
-    "bdd_villes.json"
-  ).then(r=>r.json());
+}
 
-  console.log(
-    villesDB.length +
-    " villes chargées"
-  );
+else{
+
+  villesDB =
+    await fetch("bdd_lyon.json")
+    .then(r=>r.json());
+}
 
 }
 catch(e){
 
   console.error(
-    "Erreur chargement villes",
+    "Erreur chargement base de donnée",
     e
   );
 }
@@ -826,15 +853,36 @@ console.log("corners =", corners);
   /* =========================
      GPS FRANCE
   ========================= */
-  const FR={
-    latMin:41.0,
+  let ZONE;
+
+if(currentMap==="france"){
+
+  ZONE = {
+    latMin:41,
     latMax:51.5,
     lonMin:-5.5,
     lonMax:9.8
   };
 
-  let lon=FR.lonMin+(x/S)*(FR.lonMax-FR.lonMin);
-  let lat=FR.latMax-(y/S)*(FR.latMax-FR.latMin);
+}
+else{
+
+  ZONE = {
+    latMin:45.70,
+    latMax:45.83,
+    lonMin:4.75,
+    lonMax:4.92
+  };
+
+}
+
+let lon =
+  ZONE.lonMin +
+  (x/S)*(ZONE.lonMax-ZONE.lonMin);
+
+let lat =
+  ZONE.latMax -
+  (y/S)*(ZONE.latMax-ZONE.latMin);
 
   /* =========================
      GEOCODING
@@ -959,6 +1007,90 @@ async function getCityInfo(city){
     }
 }
 
+/* =========================
+   SELECTION CARTE
+========================= */
+document.getElementById("modeFranceBtn").onclick = ()=>{
+
+currentMap = "france";
+loadDatabase();
+updateOptions();
+
+};
+
+document.getElementById("modeLyonBtn").onclick = ()=>{
+
+currentMap = "lyon";
+loadDatabase();
+updateOptions();
+
+};
+
+updateOptions();
+
+
+
+/* =========================
+   RESULTS CARTE
+========================= */
+function updateOptions(){
+
+let div =
+  document.getElementById("optionsCard");
+
+if(currentMap === "france"){
+
+  div.innerHTML = `
+
+  <b>🇫🇷 Mode France</b><br><br>
+
+  <select id="resultMode">
+
+    <option value="real">
+    📍 Ville réelle touchée
+    </option>
+
+    <option value="database">
+    🏙️ Ville la plus proche de la base
+    </option>
+
+  </select>
+
+  `;
+
+}
+
+else{
+
+  div.innerHTML = `
+
+  <b>🍷 Mode Lyon</b><br><br>
+
+  <select id="lyonMode">
+
+    <option value="all">
+    🎲 Tout
+    </option>
+
+    <option value="bar">
+    🍺 Bars
+    </option>
+
+    <option value="resto">
+    🍽️ Restaurants
+    </option>
+
+    <option value="activite">
+    🎯 Activités
+    </option>
+
+  </select>
+
+  `;
+
+}
+
+}
 
 /* =========================
    REPRENDRE IMPACT

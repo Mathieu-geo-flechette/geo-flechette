@@ -1,0 +1,8 @@
+[
+  { "nom": "Le Sucre (bar rooftop)", "lat": 45.7458, "lon": 4.8183, "type": "bar" },
+  { "nom": "Les Halles de Lyon", "lat": 45.7579, "lon": 4.8414, "type": "food" },
+  { "nom": "Parc de la Tête d'Or", "lat": 45.7797, "lon": 4.8525, "type": "activité" },
+  { "nom": "Ninkasi Guillotière", "lat": 45.7531, "lon": 4.8421, "type": "bar" },
+  { "nom": "Café Comptoir Abel", "lat": 45.7545, "lon": 4.8252, "type": "resto" },
+  { "nom": "Croix-Rousse balade", "lat": 45.7740, "lon": 4.8325, "type": "activité" }
+]
