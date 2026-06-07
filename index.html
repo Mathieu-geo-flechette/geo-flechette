@@ -958,26 +958,21 @@ let lyonMode =
 let lieuxFiltres = villesDB;
 
 if(lyonMode !== "all"){
-
-  lieuxFiltres =
-    villesDB.filter(
-      lieu =>
-        lieu.type === lyonMode
-    );
-
-    displayedCity =
-  nearest.city.nom ||
-  nearest.city.name ||
-  "Lieu inconnu";
+  lieuxFiltres = villesDB.filter(
+    lieu => lieu.type === lyonMode
+  );
 }
 
-nearest =
-  findNearestCityInList(
-    lat,
-    lon,
-    lieuxFiltres
-  );
+nearest = findNearestCityInList(
+  lat,
+  lon,
+  lieuxFiltres
+);
 
+displayedCity =
+  nearest.city?.nom ||
+  nearest.city?.name ||
+  "Lieu inconnu";
 }
 
   /* =========================
