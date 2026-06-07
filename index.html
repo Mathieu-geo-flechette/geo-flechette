@@ -906,22 +906,20 @@ let region =
 let departement =
   j.address?.county || "Inconnu";
 
-let displayedCity = city;
+  let displayedCity = "";
+let nearest = null;
 
-let nearestDistance = null;
+if(currentMap === "france"){
 
-let mode =
-  document.getElementById(
-    "resultMode"
-  ).value;
+  let mode =
+    document.getElementById(
+      "resultMode"
+    ).value;
 
-  document.getElementById("debugMode").innerText =
-  "Mode: " + mode + " | BDD villes: " + villesDB.length;
+  if(mode === "database"){
 
-if (mode === "database") {
-
-  if (villesDB.length) {
-    let nearest = findNearestCity(lat, lon);
+    nearest =
+      findNearestCity(lat, lon);
 
     displayedCity =
       nearest.city.nom ||
@@ -929,12 +927,22 @@ if (mode === "database") {
       nearest.city.city ||
       "Ville inconnue";
 
-  } else {
-    displayedCity = city; // fallback si BDD pas chargée
+  }else{
+
+    displayedCity = city;
+
   }
 
-} else {
-  displayedCity = city;
+}else{
+
+  nearest =
+    findNearestCity(lat, lon);
+
+  displayedCity =
+    nearest.city.nom ||
+    nearest.city.name ||
+    "Lieu inconnu";
+
 }
 
   /* =========================
@@ -960,23 +968,45 @@ drawCityName(
 
   let maps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city+" France")}`;
 
- document.getElementById("output").innerHTML=`
+  if(currentMap === "france"){
+
+document.getElementById("output").innerHTML = `
 <h3>🎯 Impact détecté</h3>
+
 <h2>🏙️ ${displayedCity}</h2>
+
 🌍 Région : ${region}<br>
 🏛️ Département : ${departement}<br>
+
 ${cityInfo ? `
 <b>${cityInfo.description}</b>
 ${cityInfo.extract}<br>
 ` : ""}
-📍 <b>Coordonnées GPS</b>
-${lat.toFixed(6)}, ${lon.toFixed(6)}
+
+📍 Coordonnées GPS :
+${lat.toFixed(6)},
+${lon.toFixed(6)}
 <br>
 👉 <a target="_blank" href="${maps}">
 Ouvrir dans Google Maps
 </a>
-
 `;
+
+}else{
+
+document.getElementById("output").innerHTML = `
+<h3>🍷 Destination du soir</h3>
+
+<h2>${nearest.city.nom}</h2>
+
+📍 ${nearest.city.adresse}<br>
+
+🍽️ ${nearest.city.type || ""}<br>
+
+📏 ${nearest.distance.toFixed(2)} km
+`;
+
+}
 
   src.delete();
   p.delete();
@@ -1149,7 +1179,7 @@ warpCanvas.height = 0;
 
 window.addEventListener(
   "load",
-  loadCities
+  loadDatabase
 );
 
 document.getElementById("resultMode").addEventListener("change", () => {
