@@ -965,6 +965,10 @@ if(lyonMode !== "all"){
         lieu.type === lyonMode
     );
 
+    displayedCity =
+  nearest.city.nom ||
+  nearest.city.name ||
+  "Lieu inconnu";
 }
 
 nearest =
@@ -973,11 +977,6 @@ nearest =
     lon,
     lieuxFiltres
   );
-
-displayedCity =
-  nearest.city.nom ||
-  nearest.city.name ||
-  "Lieu inconnu";
 
 }
 
@@ -1030,7 +1029,7 @@ Ouvrir dans Google Maps
 
 }else{
 
-ddocument.getElementById("output").innerHTML = `
+document.getElementById("output").innerHTML = `
 <h3>🍷 Destination du soir</h3>
 
 <h2>${nearest.city.nom}</h2>
