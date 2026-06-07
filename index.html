@@ -141,6 +141,26 @@ a{ color:#4ea3ff; }
     </div>
   </div>
   
+  <div class="card">
+
+    <label>
+    Mode de résultat :
+    </label>
+    
+    <select id="resultMode">
+    
+    <option value="real">
+    📍 Ville réelle touchée
+    </option>
+    
+    <option value="database">
+    🏙️ Ville la plus proche de la base
+    </option>
+    
+    </select>
+    <div id="debugMode" style="color:#888;font-size:12px;margin-top:6px;"></div>
+    </div>
+
   <div id="output" class="card"></div>
 
 </div>
@@ -160,6 +180,7 @@ let Hmatrix=null;
 let warpedMap = null;
 
 let currentObjectURL = null;
+let villesDB = [];
 
 
 /* =========================
@@ -623,16 +644,120 @@ ctx.fillStyle = "#FF0000";
 ctx.fill();
 }
 
+/* =====================
+   CHARGEMENT BDD VILLES
+===================== */
+async function loadCities(){
+
+try{
+
+  villesDB = await fetch(
+    "bdd_villes.json"
+  ).then(r=>r.json());
+
+  console.log(
+    villesDB.length +
+    " villes chargées"
+  );
+
+}
+catch(e){
+
+  console.error(
+    "Erreur chargement villes",
+    e
+  );
+}
+}
+
+/* =====================
+   CALCUL DISTANCE
+===================== */
+function distanceKm(
+  lat1,
+  lon1,
+  lat2,
+  lon2
+){
+
+  const R = 6371;
+
+  let dLat =
+    (lat2-lat1) *
+    Math.PI/180;
+
+  let dLon =
+    (lon2-lon1) *
+    Math.PI/180;
+
+  let a =
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
+    Math.sin(dLon/2)**2;
+
+  let c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1-a)
+    );
+
+  return R*c;
+}
+
+/* =========================
+   RECHERCHE VILLE PROCHE
+========================= */
+function findNearestCity(
+  lat,
+  lon
+){
+
+  let bestCity = null;
+
+  let bestDistance =
+    Infinity;
+
+  for(const city of villesDB){
+
+    let d =
+      distanceKm(
+        lat,
+        lon,
+        city.lat,
+        city.lon
+      );
+
+    if(d < bestDistance){
+
+      bestDistance = d;
+      bestCity = city;
+    }
+  }
+
+  return {
+    city: bestCity,
+    distance: bestDistance
+  };
+}
 
 /* =========================
    MAIN PIPELINE
 ========================= */
 async function run(){
 
-    if (!cvReady) {
-        alert("OpenCV pas encore chargé");
-    return;
-    }
+    if (!clickPoint) {
+  document.getElementById("output").innerText =
+    "❌ Aucun impact sélectionné";
+  return;
+}
+
+if (!cv || !cv.imread) {
+  document.getElementById("output").innerText =
+    "❌ OpenCV pas encore totalement chargé";
+  return;
+}
 
     let src;
 
@@ -664,6 +789,7 @@ catch(e){
     "❌ Cadre vert non détecté, reprendre la photo de sorte que la cadre de la cible soit entièrement sur l'image.";
   return;
 }
+console.log("corners =", corners);
 
   let S=Math.min(canvas.width,canvas.height);
 
@@ -718,19 +844,50 @@ catch(e){
     {headers:{"User-Agent":"dart"}}
   ).then(r=>r.json());
 
-  let city=
-    j.address?.city ||
-    j.address?.town ||
-    j.address?.village ||
-    "Lieu inconnu";
-    let cityInfo = await getCityInfo(city);
-    let region =
-    j.address?.state ||
-    "Inconnue";
+  let city =
+  j.address?.city ||
+  j.address?.town ||
+  j.address?.village ||
+  "Lieu inconnu";
+
+let cityInfo = await getCityInfo(city);
+
+let region =
+  j.address?.state || "Inconnue";
 
 let departement =
-  j.address?.county ||
-  "Inconnu";
+  j.address?.county || "Inconnu";
+
+let displayedCity = city;
+
+let nearestDistance = null;
+
+let mode =
+  document.getElementById(
+    "resultMode"
+  ).value;
+
+  document.getElementById("debugMode").innerText =
+  "Mode: " + mode + " | BDD villes: " + villesDB.length;
+
+if (mode === "database") {
+
+  if (villesDB.length) {
+    let nearest = findNearestCity(lat, lon);
+
+    displayedCity =
+      nearest.city.nom ||
+      nearest.city.name ||
+      nearest.city.city ||
+      "Ville inconnue";
+
+  } else {
+    displayedCity = city; // fallback si BDD pas chargée
+  }
+
+} else {
+  displayedCity = city;
+}
 
   /* =========================
      DRAW RESULT
@@ -748,7 +905,7 @@ drawImpact(
 
 drawCityName(
   wctx,
-  city,
+  displayedCity,
   x + 20,
   y - 20
 );
@@ -757,7 +914,7 @@ drawCityName(
 
  document.getElementById("output").innerHTML=`
 <h3>🎯 Impact détecté</h3>
-<h2>🏙️ ${city}</h2>
+<h2>🏙️ ${displayedCity}</h2>
 🌍 Région : ${region}<br>
 🏛️ Département : ${departement}<br>
 ${cityInfo ? `
@@ -857,6 +1014,17 @@ warpCanvas.width = 0;
 warpCanvas.height = 0;
 };
 
+
+window.addEventListener(
+  "load",
+  loadCities
+);
+
+document.getElementById("resultMode").addEventListener("change", () => {
+  if (clickPoint) {
+    run();
+  }
+});
 
 </script>
 
