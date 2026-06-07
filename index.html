@@ -157,25 +157,7 @@ a{ color:#4ea3ff; }
     </div>
   </div>
   
-  <div class="card">
-
-    <label>
-    Mode de résultat :
-    </label>
-    
-    <select id="resultMode">
-    
-    <option value="real">
-    📍 Ville réelle touchée
-    </option>
-    
-    <option value="database">
-    🏙️ Ville la plus proche de la base
-    </option>
-    
-    </select>
-    <div id="debugMode" style="color:#888;font-size:12px;margin-top:6px;"></div>
-    </div>
+  
 
   <div id="output" class="card"></div>
 
@@ -770,6 +752,41 @@ function findNearestCity(
 }
 
 /* =========================
+   RECHERCHE ADRESSE PROCHE
+========================= */
+function findNearestCityInList(
+  lat,
+  lon,
+  liste
+){
+
+  let bestCity = null;
+  let bestDistance = Infinity;
+
+  for(const city of liste){
+
+    let d =
+      distanceKm(
+        lat,
+        lon,
+        city.lat,
+        city.lon
+      );
+
+    if(d < bestDistance){
+
+      bestDistance = d;
+      bestCity = city;
+
+    }
+  }
+
+  return {
+    city: bestCity,
+    distance: bestDistance
+  };
+}
+/* =========================
    MAIN PIPELINE
 ========================= */
 async function run(){
@@ -935,13 +952,32 @@ if(currentMap === "france"){
 
 }else{
 
-  nearest =
-    findNearestCity(lat, lon);
+let lyonMode =
+  document.getElementById("lyonMode").value;
 
-  displayedCity =
-    nearest.city.nom ||
-    nearest.city.name ||
-    "Lieu inconnu";
+let lieuxFiltres = villesDB;
+
+if(lyonMode !== "all"){
+
+  lieuxFiltres =
+    villesDB.filter(
+      lieu =>
+        lieu.type === lyonMode
+    );
+
+}
+
+nearest =
+  findNearestCityInList(
+    lat,
+    lon,
+    lieuxFiltres
+  );
+
+displayedCity =
+  nearest.city.nom ||
+  nearest.city.name ||
+  "Lieu inconnu";
 
 }
 
@@ -1088,6 +1124,19 @@ if(currentMap === "france"){
 
   `;
 
+  let resultMode =
+  document.getElementById("resultMode");
+
+if(resultMode){
+
+  resultMode.addEventListener(
+    "change",
+    ()=>{
+      if(clickPoint) run();
+    }
+  );
+
+}
 }
 
 else{
@@ -1182,11 +1231,7 @@ window.addEventListener(
   loadDatabase
 );
 
-document.getElementById("resultMode").addEventListener("change", () => {
-  if (clickPoint) {
-    run();
-  }
-});
+
 
 </script>
 
