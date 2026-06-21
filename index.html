@@ -434,14 +434,14 @@
         hsv.rows,
         hsv.cols,
         hsv.type(),
-        [45, 100, 80, 0]
+        [25, 25, 15, 0]
       );
 
       let highGreen = new cv.Mat(
         hsv.rows,
         hsv.cols,
         hsv.type(),
-        [85, 255, 255, 255]
+        [110, 255, 255, 255]
       );
 
       /* =====================
@@ -456,7 +456,7 @@
         highGreen,
         mask
       );
-
+      cv.imshow("canvasWarp", mask);
 
       /* =====================
          NETTOYAGE
@@ -464,7 +464,7 @@
 
       let kernel = cv.getStructuringElement(
         cv.MORPH_RECT,
-        new cv.Size(15, 15)
+        new cv.Size(21, 21)
       );
 
       cv.morphologyEx(
