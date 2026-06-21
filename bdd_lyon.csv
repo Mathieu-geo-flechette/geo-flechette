@@ -1,2 +1,30 @@
-nom;type;adresse;lat;lon;maps;description
-Bistrot La Varenne;bar;5 Pl. Gailleton 69002 Lyon;45.7533257;4.8328884;https://maps.app.goo.gl/E4Cw93mQ4mbZNZgRA;
+nom;lat;lon;type;maps
+Bistrot La Varenne;45.7533257;4.8328884; bar;https://maps.app.goo.gl/E4Cw93mQ4mbZNZgRA;
+Le Sucre;45.7458;4.8183;bar;https://www.google.com/maps?q=45.7458,4.8183
+Ninkasi Guillotière;45.7531;4.8421;bar;https://www.google.com/maps?q=45.7531,4.8421
+Ayers Rock Boat;45.7585;4.8190;bar;https://www.google.com/maps?q=45.7585,4.8190
+Monkey Club;45.7647;4.8358;bar;https://www.google.com/maps?q=45.7647,4.8358
+L'Officine;45.7634;4.8342;bar;https://www.google.com/maps?q=45.7634,4.8342
+La Maison M;45.7710;4.8320;bar;https://www.google.com/maps?q=45.7710,4.8320
+Flair;45.7582;4.8349;bar;https://www.google.com/maps?q=45.7582,4.8349
+Contrary;45.7614;4.8351;bar;https://www.google.com/maps?q=45.7614,4.8351
+Les Halles de Lyon Paul Bocuse;45.7579;4.8414;resto;https://www.google.com/maps?q=45.7579,4.8414
+Café Comptoir Abel;45.7545;4.8252;resto;https://www.google.com/maps?q=45.7545,4.8252
+Daniel et Denise;45.7685;4.8348;resto;https://www.google.com/maps?q=45.7685,4.8348
+Le Bouchon des Filles;45.7665;4.8288;resto;https://www.google.com/maps?q=45.7665,4.8288
+Les Lyonnais;45.7623;4.8278;resto;https://www.google.com/maps?q=45.7623,4.8278
+Brasserie Georges;45.7480;4.8285;resto;https://www.google.com/maps?q=45.7480,4.8285
+Le Poêlon d'Or;45.7649;4.8323;resto;https://www.google.com/maps?q=45.7649,4.8323
+Chez Paul;45.7720;4.8275;resto;https://www.google.com/maps?q=45.7720,4.8275
+Les Apothicaires;45.7454;4.8424;resto;https://www.google.com/maps?q=45.7454,4.8424
+Bulle;45.7575;4.8328;resto;https://www.google.com/maps?q=45.7575,4.8328
+Parc de la Tête d'Or;45.7797;4.8525;activite;https://www.google.com/maps?q=45.7797,4.8525
+Croix-Rousse balade;45.7740;4.8325;activite;https://www.google.com/maps?q=45.7740,4.8325
+Musée des Confluences;45.7338;4.8185;activite;https://www.google.com/maps?q=45.7338,4.8185
+Mini World Lyon;45.7815;4.9178;activite;https://www.google.com/maps?q=45.7815,4.9178
+Fourvière;45.7622;4.8224;activite;https://www.google.com/maps?q=45.7622,4.8224
+Vieux Lyon;45.7620;4.8272;activite;https://www.google.com/maps?q=45.7620,4.8272
+Berges du Rhône;45.7572;4.8428;activite;https://www.google.com/maps?q=45.7572,4.8428
+Parc de Gerland;45.7279;4.8267;activite;https://www.google.com/maps?q=45.7279,4.8267
+Escape Game John Doe;45.7618;4.8350;activite;https://www.google.com/maps?q=45.7618,4.8350
+UGC Ciné Cité Confluence;45.7422;4.8154;activite;https://www.google.com/maps?q=45.7422,4.8154
