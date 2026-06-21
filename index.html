@@ -1,1044 +1,1088 @@
 <!doctype html>
 <html lang="fr">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Geo Fléchette France 🇫🇷</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Geo Fléchette France 🇫🇷</title>
 
 
-<div class="card">
-    
+  <div class="card">
+
     <b>🗺️ Carte :</b><br>
-    
+
     <button id="modeFranceBtn">🇫🇷 France</button>
-    
+
     <button id="modeLyonBtn">🍷 Lyon</button>
-    
-    </div>
-    
-    <div id="optionsCard" class="card"></div>
+
+  </div>
+
+  <div id="optionsCard" class="card"></div>
 
 
 
 
-<style>
-body{
-  font-family: Arial;
-  margin:0;
-  padding:12px;
-  background:#111;
-  color:#eee;
-}
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      padding: 12px;
+      background: #111;
+      color: #eee;
+    }
 
-h2{ margin:6px 0 10px; }
+    h2 {
+      margin: 6px 0 10px;
+    }
 
-.card{
-  background:#1a1a1a;
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:10px;
-  border:1px solid #333;
-}
+    .card {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #333;
+    }
 
-#views{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-}
+    #views {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-.panel{
-  flex:1;
-  min-width:320px;
-}
+    .panel {
+      flex: 1;
+      min-width: 320px;
+    }
 
-canvas{
-  width:100%;
-  border:1px solid #444;
-  border-radius:8px;
-  display:block;
-  margin-bottom:10px;
-}
+    canvas {
+      width: 100%;
+      border: 1px solid #444;
+      border-radius: 8px;
+      display: block;
+      margin-bottom: 10px;
+    }
 
-button{
-  width:100%;
-  padding:12px;
-  margin-top:6px;
-  background:#222;
-  color:#eee;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      background: #222;
+      color: #eee;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
 
-button:hover{ background:#333; }
+    button:hover {
+      background: #333;
+    }
 
-#status{ color:#aaa; margin-bottom:10px; }
+    #status {
+      color: #aaa;
+      margin-bottom: 10px;
+    }
 
-#output{ white-space:pre-line; }
+    #output {
+      white-space: pre-line;
+    }
 
-a{ color:#4ea3ff; }
-</style>
+    a {
+      color: #4ea3ff;
+    }
+  </style>
 
-<script>
+  <script>
     let cvReady = false;
-  
+
     function onOpenCvReady() {
       cvReady = true;
-      document.getElementById("status").style.display="none";
+      document.getElementById("status").style.display = "none";
     }
-</script>
+  </script>
 
-<script>
+  <script>
     let Module = {
       onRuntimeInitialized() {
         onOpenCvReady();
       }
     };
   </script>
-  
+
   <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js"></script>
 
 </head>
 
 <body>
 
-<h2>🎯 Geo Fléchette France 🇫🇷</h2>
+  <h2>🎯 Geo Fléchette France 🇫🇷</h2>
 
-<div class="card">
-🎯 Lance ta fléchette sur la carte<br>
-📸 Charge une photo de la cible<br>
-💥 Clique sur l’impact<br>
-🧭 L'application retrouve automatiquement la position<br>
-📍 Découvre la ville atteinte<br>
-🌍 Pars à sa découverte
-</div>
+  <div class="card">
+    🎯 Lance ta fléchette sur la carte<br>
+    📸 Charge une photo de la cible<br>
+    💥 Clique sur l’impact<br>
+    🧭 L'application retrouve automatiquement la position<br>
+    📍 Découvre la ville atteinte<br>
+    🌍 Pars à sa découverte
+  </div>
 
-<div id="status" class="card">Chargement OpenCV...</div>
+  <div id="status" class="card">Chargement OpenCV...</div>
 
 
-<label for="fileInput" class="uploadBtn">
+  <label for="fileInput" class="uploadBtn">
     📸 Charger une photo de la cible
-    </label>
+  </label>
 
-<input
-  type="file"
-  id="fileInput"
-  accept="image/*,.heic,.heif"
-/>
+  <input type="file" id="fileInput" accept="image/*,.heic,.heif" />
 
 
 
-<div id="views">
+  <div id="views">
 
     <div class="panel">
       <div class="card"><b>📍 Original</b></div>
       <canvas id="canvas"></canvas>
     </div>
-  
+
     <div class="panel">
       <div class="card"><b>🗺️ Résultat</b></div>
       <canvas id="canvasWarp"></canvas>
     </div>
-  
+
   </div>
-  
+
   <div class="card">
     <div class="buttonRow">
-  
+
       <button id="retryBtn">
         🎯 Reprendre l'impact
       </button>
-  
+
       <button id="resetBtn">
         🔄 Nouvelle partie
       </button>
-  
+
     </div>
   </div>
-  
-  
+
+
 
   <div id="output" class="card"></div>
 
-</div>
+  </div>
 
 
 
 
-<script>
-/* =========================
-    DECLARATION VARIABLES
-========================= */
-let canvas=document.getElementById("canvas");
-let ctx=canvas.getContext("2d");
+  <script>
+    /* =========================
+        DECLARATION VARIABLES
+    ========================= */
+    let canvas = document.getElementById("canvas");
+    let ctx = canvas.getContext("2d");
 
-let warpCanvas=document.getElementById("canvasWarp");
-let wctx=warpCanvas.getContext("2d");
+    let warpCanvas = document.getElementById("canvasWarp");
+    let wctx = warpCanvas.getContext("2d");
 
-let img=new Image();
+    let img = new Image();
 
-let clickPoint=null;
-let Hmatrix=null;
-let warpedMap = null;
+    let clickPoint = null;
+    let Hmatrix = null;
+    let warpedMap = null;
 
-let currentObjectURL = null;
-let villesDB = [];
+    let currentObjectURL = null;
+    let villesDB = [];
 
-let currentMap = "france";
+    let currentMap = "france";
 
-/* =========================
-    RESET GAME
-========================= */
-function resetGame(){
+    /* =========================
+        RESET GAME
+    ========================= */
+    function resetGame() {
 
-clickPoint = null;
-Hmatrix = null;
+      clickPoint = null;
+      Hmatrix = null;
 
-if(warpedMap){
-  warpedMap.delete();
-  warpedMap = null;
-}
+      if (warpedMap) {
+        warpedMap.delete();
+        warpedMap = null;
+      }
 
-document.getElementById("output").innerHTML = "";
+      document.getElementById("output").innerHTML = "";
 
-ctx.clearRect(
-  0,
-  0,
-  canvas.width,
-  canvas.height
-);
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
 
-wctx.clearRect(
-  0,
-  0,
-  warpCanvas.width,
-  warpCanvas.height
-);
-}
+      wctx.clearRect(
+        0,
+        0,
+        warpCanvas.width,
+        warpCanvas.height
+      );
+    }
 
-/* =========================
-   LOAD IMAGE
-========================= */
-document.getElementById("fileInput").onchange = async (e)=>{
+    /* =========================
+       LOAD IMAGE
+    ========================= */
+    document.getElementById("fileInput").onchange = async (e) => {
 
-let file = e.target.files[0];
-if(!file) return;
+      let file = e.target.files[0];
+      if (!file) return;
 
-// Réinitialisation complète
+      // Réinitialisation complète
 
-clickPoint = null;
-Hmatrix = null;
+      clickPoint = null;
+      Hmatrix = null;
 
-if(warpedMap){
-    warpedMap.delete();
-    warpedMap = null;
-}
+      if (warpedMap) {
+        warpedMap.delete();
+        warpedMap = null;
+      }
+
+      document.getElementById("output").innerHTML = "";
 
-document.getElementById("output").innerHTML = "";
+      wctx.clearRect(
+        0,
+        0,
+        warpCanvas.width,
+        warpCanvas.height
+      );
 
-wctx.clearRect(
-    0,
-    0,
-    warpCanvas.width,
-    warpCanvas.height
-);
+      try {
 
-try{
+        let imageBlob = file;
 
-  let imageBlob = file;
-
-  /* =========================
-     HEIC -> JPEG
-  ========================= */
-  if(
-    file.type === "image/heic" ||
-    file.type === "image/heif" ||
-    file.name.toLowerCase().endsWith(".heic") ||
-    file.name.toLowerCase().endsWith(".heif")
-  ){
-
-    document.getElementById("status").innerText =
-      "Conversion HEIC → JPEG...";
-
-      imageBlob = await heic2any({
-  blob:file,
-  toType:"image/jpeg",
-  quality:0.95
-});
-
-if(Array.isArray(imageBlob)){
-  imageBlob = imageBlob[0];
-};
-
-    document.getElementById("status").innerText =
-      "Image convertie";
-  }
-
-  img.onload = ()=>{
-    if(img.width * img.height > 25000000){
-
-resetGame();
-
-alert(
-  "Photo trop grande. Utilisez une photo de 12MP maximum."
-);
-
-return;
-}
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    warpCanvas.width = img.width;
-    warpCanvas.height = img.height;
-
-    ctx.clearRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-    ctx.drawImage(
-      img,
-      0,
-      0
-    );
-  };
-
-  if(currentObjectURL){
-  URL.revokeObjectURL(currentObjectURL);
-}
-
-currentObjectURL =
-  URL.createObjectURL(imageBlob);
-
-img.src = currentObjectURL;
-}
-catch(err){
-
-  console.error(err);
-
-  alert(
-    "Impossible de lire cette image."
-  );
-}
-};
-
-/* =========================
-   CLICK IMPACT
-========================= */
-canvas.addEventListener("click",(e)=>{
-  let r=canvas.getBoundingClientRect();
-
-  let x=(e.clientX-r.left)*(canvas.width/r.width);
-  let y=(e.clientY-r.top)*(canvas.height/r.height);
-
-  clickPoint={x,y};
-
-  ctx.clearRect(
-  0,
-  0,
-  canvas.width,
-  canvas.height
-    );
-
-  ctx.drawImage(img,0,0);
-  
-drawImpact(
-  ctx,
-  x,
-  y
-);
-
-requestAnimationFrame(()=>{
-  run();
-});
-});
-
-/* =========================
-   DETECT HEXAGONES ROUGES
-========================= */
-function orderCorners(pts){
-
-let sum = pts.map(p=>p.x+p.y);
-let diff = pts.map(p=>p.x-p.y);
-
-let tl = pts[sum.indexOf(Math.min(...sum))];
-let br = pts[sum.indexOf(Math.max(...sum))];
-
-let tr = pts[diff.indexOf(Math.max(...diff))];
-let bl = pts[diff.indexOf(Math.min(...diff))];
-
-return [tl,tr,br,bl];
-}
-
-function detectCorners(src){
-
-let hsv = new cv.Mat();
-
-cv.cvtColor(src,hsv,cv.COLOR_RGBA2RGB);
-cv.cvtColor(hsv,hsv,cv.COLOR_RGB2HSV);
-
-/* =====================
-   DETECTION VERT
-===================== */
-
-/* =====================
-   VERT CLAIR
-===================== */
-
-let low1 = new cv.Mat(
-  hsv.rows,
-  hsv.cols,
-  hsv.type(),
-  [25,40,25,0]
-);
-
-let high1 = new cv.Mat(
-  hsv.rows,
-  hsv.cols,
-  hsv.type(),
-  [100,255,255,255]
-);
-
-/* =====================
-   VERT FONCÉ
-===================== */
-
-let low2 = new cv.Mat(
-  hsv.rows,
-  hsv.cols,
-  hsv.type(),
-  [20,15,10,0]
-);
-
-let high2 = new cv.Mat(
-  hsv.rows,
-  hsv.cols,
-  hsv.type(),
-  [110,255,120,255]
-);
-
-/* =====================
-   MASQUES
-===================== */
-
-let mask1 = new cv.Mat();
-let mask2 = new cv.Mat();
-
-cv.inRange(
-  hsv,
-  low1,
-  high1,
-  mask1
-);
-
-cv.inRange(
-  hsv,
-  low2,
-  high2,
-  mask2
-);
-
-/* =====================
-   FUSION
-===================== */
-
-let mask = new cv.Mat();
-
-cv.bitwise_or(
-  mask1,
-  mask2,
-  mask
-);
-
-/* =====================
-   NETTOYAGE
-===================== */
-
-let kernel = cv.getStructuringElement(
-  cv.MORPH_RECT,
-  new cv.Size(25,25)
-);
-
-cv.morphologyEx(
-  mask,
-  mask,
-  cv.MORPH_CLOSE,
-  kernel
-);
-
-/* =====================
-   CONTOURS
-===================== */
-
-let contours = new cv.MatVector();
-let hierarchy = new cv.Mat();
-
-cv.findContours(
-  mask,
-  contours,
-  hierarchy,
-  cv.RETR_EXTERNAL,
-  cv.CHAIN_APPROX_SIMPLE
-);
-
-let bestQuad = null;
-let bestArea = 0;
-
-for(let i=0;i<contours.size();i++){
-
-  let cnt = contours.get(i);
-
-  let area = cv.contourArea(cnt);
-
-  if(area < 5000)
-    continue;
-
-  let peri = cv.arcLength(
-    cnt,
-    true
-  );
+        /* =========================
+           HEIC -> JPEG
+        ========================= */
+        if (
+          file.type === "image/heic" ||
+          file.type === "image/heif" ||
+          file.name.toLowerCase().endsWith(".heic") ||
+          file.name.toLowerCase().endsWith(".heif")
+        ) {
 
-  let approx = new cv.Mat();
+          document.getElementById("status").innerText =
+            "Conversion HEIC → JPEG...";
 
-  cv.approxPolyDP(
-    cnt,
-    approx,
-    0.05 * peri,
-    true
-  );
-
-  let rect = cv.minAreaRect(cnt);
-
-let width = rect.size.width;
-let height = rect.size.height;
-
-let ratio =
-  Math.max(width,height) /
-  Math.min(width,height);
-
-if(
-  ratio < 1.3 &&
-  area > bestArea
-){
-  bestArea = area;
-
-  let vertices =
-    cv.RotatedRect.points(rect);
-
-  bestQuad = vertices;
-}
-{
-    bestArea = area;
-    bestQuad = approx;
-  }
-}
-
-if(!bestQuad){
-
-hsv.delete();
-
-low1.delete();
-high1.delete();
-
-low2.delete();
-high2.delete();
-
-mask1.delete();
-mask2.delete();
-
-mask.delete();
-
-kernel.delete();
-contours.delete();
-hierarchy.delete();
-
-return null;
-}
-
-let d = bestQuad.data32S;
-
-let pts = [
-  {x:d[0],y:d[1]},
-  {x:d[2],y:d[3]},
-  {x:d[4],y:d[5]},
-  {x:d[6],y:d[7]}
-];
-
-pts = orderCorners(pts);
-
-hsv.delete();
-
-low1.delete();
-high1.delete();
-
-low2.delete();
-high2.delete();
-
-mask1.delete();
-mask2.delete();
-
-mask.delete();
-
-kernel.delete();
-contours.delete();
-hierarchy.delete();
-
-bestQuad.delete();
-
-return pts;
-}
-
-function drawCityName(ctx,text,x,y){
-
-let maxWidth =
-  warpCanvas.width - x - 20;
-
-let size = 96;
-
-do{
-
-  ctx.font = `bold ${size}px Arial`;
-
-  let w =
-    ctx.measureText(text).width;
-
-  if(w <= maxWidth)
-    break;
-
-  size -= 2;
-
-}while(size > 32);
-
-ctx.font = `bold ${size}px Arial`;
-
-ctx.strokeStyle = "black";
-ctx.lineWidth = Math.max(4,size/6);
-
-ctx.strokeText(text,x,y);
-
-ctx.fillStyle = "#FFD54F";
-ctx.strokeStyle = "#111";
-ctx.fillText(text,x,y);
-
-
-}
-
-function drawImpact(ctx,x,y){
-
-ctx.lineWidth = 20;
-ctx.strokeStyle = "#FF0000";
-
-// cercle extérieur
-ctx.beginPath();
-ctx.arc(x,y,90,0,Math.PI*2);
-ctx.stroke();
-
-// cercle intérieur
-ctx.beginPath();
-ctx.arc(x,y,54,0,Math.PI*2);
-ctx.stroke();
-
-// centre
-ctx.beginPath();
-ctx.arc(x,y,18,0,Math.PI*2);
-ctx.fillStyle = "#FF0000";
-ctx.fill();
-}
-
-/* =====================
-   CHARGEMENT BDD CSV
-===================== */
-async function loadCSV(file){
-
-  const text = await fetch(file)
-    .then(r => r.text());
-
-  const lines = text
-    .trim()
-    .split("\n");
-
-  const headers =
-    lines[0]
-      .split(";")
-      .map(h => h.trim());
-
-  return lines.slice(1).map(line => {
-
-    const values = line.split(";");
-
-    let obj = {};
-
-    headers.forEach((h,i)=>{
-      obj[h] = values[i]?.trim() || "";
+          imageBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.95
+          });
+
+          if (Array.isArray(imageBlob)) {
+            imageBlob = imageBlob[0];
+          };
+
+          document.getElementById("status").innerText =
+            "Image convertie";
+        }
+
+        img.onload = () => {
+
+          const MAX_SIZE = 2500;
+
+          let scale = Math.min(
+            1,
+            MAX_SIZE / Math.max(img.width, img.height)
+          );
+
+          canvas.width =
+            Math.round(img.width * scale);
+
+          canvas.height =
+            Math.round(img.height * scale);
+
+          warpCanvas.width =
+            canvas.width;
+
+          warpCanvas.height =
+            canvas.height;
+
+          /*
+          if (img.width * img.height > 25000000) {
+
+            resetGame();
+
+            alert(
+              "Photo trop grande. Utilisez une photo de 12MP maximum."
+            );
+
+            return;
+          }*/
+
+          /*
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+          
+                    warpCanvas.width = img.width;
+                    warpCanvas.height = img.height;
+          */
+          ctx.clearRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
+          ctx.drawImage(
+            img,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+        };
+
+        if (currentObjectURL) {
+          URL.revokeObjectURL(currentObjectURL);
+        }
+
+        currentObjectURL =
+          URL.createObjectURL(imageBlob);
+
+        img.src = currentObjectURL;
+      }
+      catch (err) {
+
+        console.error(err);
+
+        alert(
+          "Impossible de lire cette image."
+        );
+      }
+    };
+
+    /* =========================
+       CLICK IMPACT
+    ========================= */
+    canvas.addEventListener("click", (e) => {
+      let r = canvas.getBoundingClientRect();
+
+      let x = (e.clientX - r.left) * (canvas.width / r.width);
+      let y = (e.clientY - r.top) * (canvas.height / r.height);
+
+      clickPoint = { x, y };
+
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      drawImpact(
+        ctx,
+        x,
+        y
+      );
+
+      requestAnimationFrame(() => {
+        run();
+      });
     });
 
-    if(obj.lat) obj.lat = parseFloat(obj.lat);
-    if(obj.lon) obj.lon = parseFloat(obj.lon);
 
-    return obj;
-  });
-}
+    /* =========================
+       DETECT HEXAGONES ROUGES
+    ========================= */
+    function orderCorners(pts) {
 
-/* =====================
-   CHARGEMENT BDD
-===================== */
-async function loadDatabase(){
+      let sum = pts.map(p => p.x + p.y);
+      let diff = pts.map(p => p.x - p.y);
 
-  try{
+      let tl = pts[sum.indexOf(Math.min(...sum))];
+      let br = pts[sum.indexOf(Math.max(...sum))];
 
-    if(currentMap === "france"){
+      let tr = pts[diff.indexOf(Math.max(...diff))];
+      let bl = pts[diff.indexOf(Math.min(...diff))];
 
-      villesDB =
-        await loadCSV("bdd_villes.csv");
-
-    }else{
-
-      villesDB =
-        await loadCSV("bdd_lyon.csv");
-
+      return [tl, tr, br, bl];
     }
 
-    console.log(
-      "BDD chargée",
-      villesDB.length,
-      "entrées"
-    );
+    /* =========================
+       DETECT CADRE CIBLE
+    ========================= */
+    function detectCorners(src) {
 
-  }
-  catch(e){
+      let hsv = new cv.Mat();
 
-    console.error(
-      "Erreur chargement CSV",
-      e
-    );
-  }
-}
+      let imageArea =
+        src.cols * src.rows;
 
-/* =====================
-   CALCUL DISTANCE
-===================== */
-function distanceKm(
-  lat1,
-  lon1,
-  lat2,
-  lon2
-){
+      cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
+      cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
 
-  const R = 6371;
-
-  let dLat =
-    (lat2-lat1) *
-    Math.PI/180;
-
-  let dLon =
-    (lon2-lon1) *
-    Math.PI/180;
-
-  let a =
-    Math.sin(dLat/2)**2 +
-    Math.cos(lat1*Math.PI/180) *
-    Math.cos(lat2*Math.PI/180) *
-    Math.sin(dLon/2)**2;
-
-  let c =
-    2 *
-    Math.atan2(
-      Math.sqrt(a),
-      Math.sqrt(1-a)
-    );
-
-  return R*c;
-}
-
-/* =========================
-   RECHERCHE VILLE PROCHE
-========================= */
-function findNearestCity(
-  lat,
-  lon
-){
-
-  let bestCity = null;
-
-  let bestDistance =
-    Infinity;
-
-  for(const city of villesDB){
-
-    let d =
-      distanceKm(
-        lat,
-        lon,
-        city.lat,
-        city.lon
+      /* =====================
+         DETECTION VERT
+      ===================== */
+      let lowGreen = new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [45, 100, 80, 0]
       );
 
-    if(d < bestDistance){
-
-      bestDistance = d;
-      bestCity = city;
-    }
-  }
-
-  return {
-    city: bestCity,
-    distance: bestDistance
-  };
-}
-
-/* =========================
-   RECHERCHE ADRESSE PROCHE
-========================= */
-function findNearestCityInList(
-  lat,
-  lon,
-  liste
-){
-
-  let bestCity = null;
-  let bestDistance = Infinity;
-
-  for(const city of liste){
-
-    let d =
-      distanceKm(
-        lat,
-        lon,
-        city.lat,
-        city.lon
+      let highGreen = new cv.Mat(
+        hsv.rows,
+        hsv.cols,
+        hsv.type(),
+        [85, 255, 255, 255]
       );
 
-    if(d < bestDistance){
+      /* =====================
+         MASQUES
+      ===================== */
 
-      bestDistance = d;
-      bestCity = city;
+      let mask = new cv.Mat();
+
+      cv.inRange(
+        hsv,
+        lowGreen,
+        highGreen,
+        mask
+      );
+
+
+      /* =====================
+         NETTOYAGE
+      ===================== */
+
+      let kernel = cv.getStructuringElement(
+        cv.MORPH_RECT,
+        new cv.Size(15, 15)
+      );
+
+      cv.morphologyEx(
+        mask,
+        mask,
+        cv.MORPH_CLOSE,
+        kernel
+      );
+
+      /* =====================
+         CONTOURS
+      ===================== */
+
+      let contours = new cv.MatVector();
+      let hierarchy = new cv.Mat();
+
+      cv.findContours(
+        mask,
+        contours,
+        hierarchy,
+        cv.RETR_EXTERNAL,
+        cv.CHAIN_APPROX_SIMPLE
+      );
+
+      let bestQuad = null;
+      let bestArea = 0;
+
+      for (let i = 0; i < contours.size(); i++) {
+
+        let cnt = contours.get(i);
+
+        let area = cv.contourArea(cnt);
+
+        if (area < 5000)
+          continue;
+
+        let imageArea =
+          src.cols * src.rows;
+
+        if (area < imageArea * 0.30) {
+          continue;
+        }
+
+        let peri = cv.arcLength(
+          cnt,
+          true
+        );
+
+        let approx = new cv.Mat();
+
+        cv.approxPolyDP(
+          cnt,
+          approx,
+          0.05 * peri,
+          true
+        );
+
+        let rect = cv.minAreaRect(cnt);
+
+        let width = rect.size.width;
+        let height = rect.size.height;
+
+        let ratio =
+          Math.max(width, height) /
+          Math.min(width, height);
+
+        if (
+          ratio < 1.3 &&
+          area > bestArea
+        ) {
+          bestArea = area;
+
+          let vertices =
+            cv.RotatedRect.points(rect);
+
+          bestQuad = vertices;
+        }
+        {
+          bestArea = area;
+          bestQuad = approx;
+        }
+      }
+
+      if (!bestQuad) {
+
+        hsv.delete();
+
+        lowGreen.delete();
+        highGreen.delete();
+
+        mask.delete();
+
+        kernel.delete();
+        contours.delete();
+        hierarchy.delete();
+
+        return null;
+      }
+
+      let d = bestQuad.data32S;
+
+      let pts = [
+        { x: d[0], y: d[1] },
+        { x: d[2], y: d[3] },
+        { x: d[4], y: d[5] },
+        { x: d[6], y: d[7] }
+      ];
+
+      pts = orderCorners(pts);
+
+      hsv.delete();
+
+      lowGreen.delete();
+      highGreen.delete();
+
+      mask.delete();
+
+      kernel.delete();
+      contours.delete();
+      hierarchy.delete();
+
+      bestQuad.delete();
+
+      return pts;
+    }
+
+    function drawCityName(ctx, text, x, y) {
+
+      let maxWidth =
+        warpCanvas.width - x - 20;
+
+      let size = 96;
+
+      do {
+
+        ctx.font = `bold ${size}px Arial`;
+
+        let w =
+          ctx.measureText(text).width;
+
+        if (w <= maxWidth)
+          break;
+
+        size -= 2;
+
+      } while (size > 32);
+
+      ctx.font = `bold ${size}px Arial`;
+
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = Math.max(4, size / 6);
+
+      ctx.strokeText(text, x, y);
+
+      ctx.fillStyle = "#FFD54F";
+      ctx.strokeStyle = "#111";
+      ctx.fillText(text, x, y);
+
 
     }
-  }
 
-  return {
-    city: bestCity,
-    distance: bestDistance
-  };
-}
-/* =========================
-   MAIN PIPELINE
-========================= */
-async function run(){
+    function drawImpact(ctx, x, y) {
 
-    if (!clickPoint) {
-  document.getElementById("output").innerText =
-    "❌ Aucun impact sélectionné";
-  return;
-}
+      ctx.lineWidth = 20;
+      ctx.strokeStyle = "#FF0000";
 
-if (!cv || !cv.imread) {
-  document.getElementById("output").innerText =
-    "❌ OpenCV pas encore totalement chargé";
-  return;
-}
+      // cercle extérieur
+      ctx.beginPath();
+      ctx.arc(x, y, 90, 0, Math.PI * 2);
+      ctx.stroke();
 
-    let src;
+      // cercle intérieur
+      ctx.beginPath();
+      ctx.arc(x, y, 54, 0, Math.PI * 2);
+      ctx.stroke();
 
-try{
-    let tempCanvas = document.createElement("canvas");
-tempCanvas.width = img.width;
-tempCanvas.height = img.height;
+      // centre
+      ctx.beginPath();
+      ctx.arc(x, y, 18, 0, Math.PI * 2);
+      ctx.fillStyle = "#FF0000";
+      ctx.fill();
+    }
 
-let tempCtx = tempCanvas.getContext("2d");
+    /* =====================
+       CHARGEMENT BDD CSV
+    ===================== */
+    async function loadCSV(file) {
 
-tempCtx.drawImage(
-  img,
-  0,
-  0
-);
+      const text = await fetch(file)
+        .then(r => r.text());
 
-src = cv.imread(tempCanvas);}
-catch(e){
+      const result = Papa.parse(text, {
+        header: true,
+        delimiter: ";",
+        dynamicTyping: true,
+        skipEmptyLines: true
+      });
 
-  document.getElementById("output").innerHTML =
-    "❌ Impossible de lire cette photo";
+      return result.data;
+    }
+    /* old (fonctionnelle sans papa parse)
+    async function loadCSV(file) {
 
-  return;
-}
-  let corners=detectCorners(src);
+      const text = await fetch(file)
+        .then(r => r.text());
 
-  if(!corners){
-  document.getElementById("output").innerText =
-    "❌ Cadre vert non détecté, reprendre la photo de sorte que la cadre de la cible soit entièrement sur l'image.";
-  return;
-}
-console.log("corners =", corners);
+      const lines = text
+        .trim()
+        .split("\n");
 
-  let S=Math.min(canvas.width,canvas.height);
+      const headers =
+        lines[0]
+          .split(";")
+          .map(h => h.trim());
 
-  let srcPts=cv.matFromArray(4,1,cv.CV_32FC2,[
-    corners[0].x,corners[0].y,
-    corners[1].x,corners[1].y,
-    corners[2].x,corners[2].y,
-    corners[3].x,corners[3].y
-  ]);
+      return lines.slice(1).map(line => {
 
-  let dstPts=cv.matFromArray(4,1,cv.CV_32FC2,[
-    0,0,
-    S,0,
-    S,S,
-    0,S
-  ]);
+        const values = line.split(";");
 
-  Hmatrix=cv.getPerspectiveTransform(srcPts,dstPts);
+        let obj = {};
 
-  /* =========================
-     IMPACT TRANSFORM
-  ========================= */
-  let p=cv.matFromArray(1,1,cv.CV_32FC2,[clickPoint.x,clickPoint.y]);
-  let out=new cv.Mat();
+        headers.forEach((h, i) => {
+          obj[h] = values[i]?.trim() || "";
+        });
 
-  cv.perspectiveTransform(p,out,Hmatrix);
+        if (obj.lat) obj.lat = parseFloat(obj.lat);
+        if (obj.lon) obj.lon = parseFloat(obj.lon);
 
-  let x=out.data32F[0];
-  let y=out.data32F[1];
+        return obj;
+      });
+    }*/
 
-  let warped=new cv.Mat();
-  cv.warpPerspective(src,warped,Hmatrix,new cv.Size(S,S));
+    /* =====================
+       CHARGEMENT BDD
+    ===================== */
+    async function loadDatabase() {
 
-  /* =========================
-     GPS FRANCE
-  ========================= */
-  let ZONE;
+      try {
 
-if(currentMap==="france"){
+        if (currentMap === "france") {
 
-  ZONE = {
-    latMin:41,
-    latMax:51.5,
-    lonMin:-5.5,
-    lonMax:9.8
-  };
+          villesDB =
+            await loadCSV("bdd_villes.csv");
 
-}
-else{
+        } else {
 
-  ZONE = {
-    latMin:45.70,
-    latMax:45.83,
-    lonMin:4.75,
-    lonMax:4.92
-  };
+          villesDB =
+            await loadCSV("bdd_lyon.csv");
 
-}
+        }
 
-let lon =
-  ZONE.lonMin +
-  (x/S)*(ZONE.lonMax-ZONE.lonMin);
+        console.log(
+          "BDD chargée",
+          villesDB.length,
+          "entrées"
+        );
 
-let lat =
-  ZONE.latMax -
-  (y/S)*(ZONE.latMax-ZONE.latMin);
+      }
+      catch (e) {
 
-  /* =========================
-     GEOCODING
-  ========================= */
-  let j=await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
-    {headers:{"User-Agent":"dart"}}
-  ).then(r=>r.json());
+        console.error(
+          "Erreur chargement CSV",
+          e
+        );
+      }
+    }
 
-  let city =
-  j.address?.city ||
-  j.address?.town ||
-  j.address?.village ||
-  "Lieu inconnu";
+    /* =====================
+       CALCUL DISTANCE
+    ===================== */
+    function distanceKm(
+      lat1,
+      lon1,
+      lat2,
+      lon2
+    ) {
 
-let cityInfo = await getCityInfo(city);
+      const R = 6371;
 
-let region =
-  j.address?.state || "Inconnue";
+      let dLat =
+        (lat2 - lat1) *
+        Math.PI / 180;
 
-let departement =
-  j.address?.county || "Inconnu";
+      let dLon =
+        (lon2 - lon1) *
+        Math.PI / 180;
 
-  let displayedCity = "";
-let nearest = null;
+      let a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
 
-if(currentMap === "france"){
+      let c =
+        2 *
+        Math.atan2(
+          Math.sqrt(a),
+          Math.sqrt(1 - a)
+        );
 
-  let mode =
-    document.getElementById(
-      "resultMode"
-    ).value;
+      return R * c;
+    }
 
-  if(mode === "database"){
+    /* =========================
+       RECHERCHE VILLE PROCHE
+    ========================= */
+    function findNearestCity(
+      lat,
+      lon
+    ) {
 
-    nearest =
-      findNearestCity(lat, lon);
+      let bestCity = null;
 
-    displayedCity =
-      nearest.city.nom ||
-      nearest.city.name ||
-      nearest.city.city ||
-      "Ville inconnue";
+      let bestDistance =
+        Infinity;
 
-  }else{
+      for (const city of villesDB) {
 
-    displayedCity = city;
+        let d =
+          distanceKm(
+            lat,
+            lon,
+            city.lat,
+            city.lon
+          );
 
-  }
+        if (d < bestDistance) {
 
-}else{
+          bestDistance = d;
+          bestCity = city;
+        }
+      }
 
-let lyonMode =
-  document.getElementById("lyonMode").value;
+      return {
+        city: bestCity,
+        distance: bestDistance
+      };
+    }
 
-let lieuxFiltres = villesDB;
+    /* =========================
+       RECHERCHE ADRESSE PROCHE
+    ========================= */
+    function findNearestCityInList(
+      lat,
+      lon,
+      liste
+    ) {
 
-if(lyonMode !== "all"){
-  lieuxFiltres = villesDB.filter(
-    lieu => lieu.type === lyonMode
-  );
-}
+      let bestCity = null;
+      let bestDistance = Infinity;
 
-nearest = findNearestCityInList(
-  lat,
-  lon,
-  lieuxFiltres
-);
+      for (const city of liste) {
 
-displayedCity =
-  nearest.city?.nom ||
-  nearest.city?.name ||
-  "Lieu inconnu";
-}
+        let d =
+          distanceKm(
+            lat,
+            lon,
+            city.lat,
+            city.lon
+          );
 
-  /* =========================
-     DRAW RESULT
-  ========================= */
-  /*cv.circle(warped,new cv.Point(x,y),14,[0,0,255,255],-1);*/
+        if (d < bestDistance) {
+
+          bestDistance = d;
+          bestCity = city;
+
+        }
+      }
+
+      return {
+        city: bestCity,
+        distance: bestDistance
+      };
+    }
+    /* =========================
+       MAIN PIPELINE
+    ========================= */
+    async function run() {
+
+      if (!clickPoint) {
+        document.getElementById("output").innerText =
+          "❌ Aucun impact sélectionné";
+        return;
+      }
+
+      if (!cv || !cv.imread) {
+        document.getElementById("output").innerText =
+          "❌ OpenCV pas encore totalement chargé";
+        return;
+      }
+
+      let src;
+
+      try {
+        let tempCanvas = document.createElement("canvas");
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+
+        let tempCtx = tempCanvas.getContext("2d");
+
+        tempCtx.drawImage(
+          img,
+          0,
+          0,
+          tempCanvas.width,
+          tempCanvas.height
+        );
+
+        // ✅ D'ABORD lire l'image
+        src = cv.imread(tempCanvas);
 
 
-  cv.imshow("canvasWarp",warped);
+        try {
+          let small = new cv.Mat();
 
-drawImpact(
-  wctx,
-  x,
-  y
-);
+          cv.resize(
+            src,
+            small,
+            new cv.Size(),
+            0.4,
+            0.4,
+            cv.INTER_AREA
+          );
+          src = cv.imread(tempCanvas);
 
-drawCityName(
-  wctx,
-  displayedCity,
-  x + 20,
-  y - 20
-);
+        }
+        catch (err) {
 
-  let maps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city+" France")}`;
+          console.error(err);
 
-  if(currentMap === "france"){
+          document.getElementById("output").innerHTML =
+            "❌ OpenCV n'a pas réussi à lire la photo";
 
-document.getElementById("output").innerHTML = `
+          return;
+        }
+      }
+      catch (e) {
+
+        document.getElementById("output").innerHTML =
+          "❌ Impossible de lire cette photo";
+
+        return;
+      }
+      let corners = detectCorners(src);
+
+      if (!corners) {
+        document.getElementById("output").innerText =
+          "❌ Cadre vert non détecté, reprendre la photo de sorte que la cadre de la cible soit entièrement sur l'image.";
+        return;
+      }
+      console.log("corners =", corners);
+
+      let S = Math.min(canvas.width, canvas.height);
+
+      let srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        corners[0].x, corners[0].y,
+        corners[1].x, corners[1].y,
+        corners[2].x, corners[2].y,
+        corners[3].x, corners[3].y
+      ]);
+
+      let dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        0, 0,
+        S, 0,
+        S, S,
+        0, S
+      ]);
+
+      Hmatrix = cv.getPerspectiveTransform(srcPts, dstPts);
+
+      /* =========================
+         IMPACT TRANSFORM
+      ========================= */
+      let p = cv.matFromArray(1, 1, cv.CV_32FC2, [clickPoint.x, clickPoint.y]);
+      let out = new cv.Mat();
+
+      cv.perspectiveTransform(p, out, Hmatrix);
+
+      let x = out.data32F[0];
+      let y = out.data32F[1];
+
+      let warped = new cv.Mat();
+      cv.warpPerspective(src, warped, Hmatrix, new cv.Size(S, S));
+
+      /* =========================
+         GPS FRANCE
+      ========================= */
+      let ZONE;
+
+      if (currentMap === "france") {
+
+        ZONE = {
+          latMin: 41,
+          latMax: 51.5,
+          lonMin: -5.5,
+          lonMax: 9.8
+        };
+
+      }
+      else {
+
+        ZONE = {
+          latMin: 45.70,
+          latMax: 45.83,
+          lonMin: 4.75,
+          lonMax: 4.92
+        };
+
+      }
+
+      let lon =
+        ZONE.lonMin +
+        (x / S) * (ZONE.lonMax - ZONE.lonMin);
+
+      let lat =
+        ZONE.latMax -
+        (y / S) * (ZONE.latMax - ZONE.latMin);
+
+      /* =========================
+         GEOCODING
+      ========================= */
+      let j = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+        { headers: { "User-Agent": "dart" } }
+      ).then(r => r.json());
+
+      let city =
+        j.address?.city ||
+        j.address?.town ||
+        j.address?.village ||
+        "Lieu inconnu";
+
+      let cityInfo = await getCityInfo(city);
+
+      let region =
+        j.address?.state || "Inconnue";
+
+      let departement =
+        j.address?.county || "Inconnu";
+
+      let displayedCity = "";
+      let nearest = null;
+
+      if (currentMap === "france") {
+
+        let mode =
+          document.getElementById(
+            "resultMode"
+          ).value;
+
+        if (mode === "database") {
+
+          nearest =
+            findNearestCity(lat, lon);
+
+          displayedCity =
+            nearest?.city?.nom ||
+            nearest?.city?.name ||
+            nearest?.city?.city ||
+            "Ville inconnue";
+
+        } else {
+
+          displayedCity = city;
+
+        }
+
+      } else {
+
+        let lyonMode =
+          document.getElementById("lyonMode").value;
+
+        let lieuxFiltres = villesDB;
+
+        if (lyonMode !== "all") {
+          lieuxFiltres = villesDB.filter(
+            lieu => lieu.type === lyonMode
+          );
+        }
+
+        nearest = findNearestCityInList(
+          lat,
+          lon,
+          lieuxFiltres
+        );
+
+        displayedCity =
+          nearest.city?.nom ||
+          nearest.city?.name ||
+          "Lieu inconnu";
+      }
+
+      /* =========================
+         DRAW RESULT
+      ========================= */
+      /*cv.circle(warped,new cv.Point(x,y),14,[0,0,255,255],-1);*/
+
+
+      cv.imshow("canvasWarp", warped);
+
+      drawImpact(
+        wctx,
+        x,
+        y
+      );
+
+      drawCityName(
+        wctx,
+        displayedCity,
+        x + 20,
+        y - 20
+      );
+
+      let maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city + " France")}`;
+
+      if (currentMap === "france") {
+
+        document.getElementById("output").innerHTML = `
 <h3>🎯 Impact détecté</h3>
 
 <h2>🏙️ ${displayedCity}</h2>
@@ -1060,9 +1104,9 @@ Ouvrir dans Google Maps
 </a>
 `;
 
-}else{
+      } else {
 
-document.getElementById("output").innerHTML = `
+        document.getElementById("output").innerHTML = `
 <h3>🍷 Destination du soir</h3>
 
 <h2>${nearest.city.nom}</h2>
@@ -1089,71 +1133,71 @@ document.getElementById("output").innerHTML = `
 </a>
 `;
 
-}
+      }
 
-  src.delete();
-  p.delete();
-  out.delete();
-  warped.delete();
-}
+      src.delete();
+      p.delete();
+      out.delete();
+      warped.delete();
+    }
 
-async function getCityInfo(city){
-    try{
+    async function getCityInfo(city) {
+      try {
 
-    let r = await fetch(
-        `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(city)}`
-    );
+        let r = await fetch(
+          `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(city)}`
+        );
 
-    if(!r.ok) return null;
+        if (!r.ok) return null;
 
-    let j = await r.json();
+        let j = await r.json();
 
-    return {
-        title: j.title,
-        description: j.description || "",
-        extract: j.extract || ""
+        return {
+          title: j.title,
+          description: j.description || "",
+          extract: j.extract || ""
+        };
+
+      } catch (e) {
+
+        return null;
+      }
+    }
+
+    /* =========================
+       SELECTION CARTE
+    ========================= */
+    document.getElementById("modeFranceBtn").onclick = () => {
+
+      currentMap = "france";
+      loadDatabase();
+      updateOptions();
+
     };
 
-    }catch(e){
+    document.getElementById("modeLyonBtn").onclick = () => {
 
-    return null;
-    }
-}
+      currentMap = "lyon";
+      loadDatabase();
+      updateOptions();
 
-/* =========================
-   SELECTION CARTE
-========================= */
-document.getElementById("modeFranceBtn").onclick = ()=>{
+    };
 
-currentMap = "france";
-loadDatabase();
-updateOptions();
-
-};
-
-document.getElementById("modeLyonBtn").onclick = ()=>{
-
-currentMap = "lyon";
-loadDatabase();
-updateOptions();
-
-};
-
-updateOptions();
+    updateOptions();
 
 
 
-/* =========================
-   RESULTS CARTE
-========================= */
-function updateOptions(){
+    /* =========================
+       RESULTS CARTE
+    ========================= */
+    function updateOptions() {
 
-let div =
-  document.getElementById("optionsCard");
+      let div =
+        document.getElementById("optionsCard");
 
-if(currentMap === "france"){
+      if (currentMap === "france") {
 
-  div.innerHTML = `
+        div.innerHTML = `
 
   <b>🇫🇷 Mode France</b><br><br>
 
@@ -1171,24 +1215,24 @@ if(currentMap === "france"){
 
   `;
 
-  let resultMode =
-  document.getElementById("resultMode");
+        let resultMode =
+          document.getElementById("resultMode");
 
-if(resultMode){
+        if (resultMode) {
 
-  resultMode.addEventListener(
-    "change",
-    ()=>{
-      if(clickPoint) run();
-    }
-  );
+          resultMode.addEventListener(
+            "change",
+            () => {
+              if (clickPoint) run();
+            }
+          );
 
-}
-}
+        }
+      }
 
-else{
+      else {
 
-  div.innerHTML = `
+        div.innerHTML = `
 
   <b>🍷 Mode Lyon</b><br><br>
 
@@ -1214,73 +1258,76 @@ else{
 
   `;
 
-}
+      }
 
-}
+    }
 
-/* =========================
-   REPRENDRE IMPACT
-========================= */
-document.getElementById("retryBtn").onclick=()=>{
+    /* =========================
+       REPRENDRE IMPACT
+    ========================= */
+    document.getElementById("retryBtn").onclick = () => {
 
-clickPoint = null;
+      clickPoint = null;
 
-ctx.clearRect(
-  0,
-  0,
-  canvas.width,
-  canvas.height
-);
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
 
-ctx.drawImage(
-  img,
-  0,
-  0
-);
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
 
-wctx.clearRect(
-  0,
-  0,
-  warpCanvas.width,
-  warpCanvas.height
-);
+      wctx.clearRect(
+        0,
+        0,
+        warpCanvas.width,
+        warpCanvas.height
+      );
 
-document.getElementById("output").innerHTML =
-  "👉 Cliquez sur le nouvel impact de fléchette.";
-};
+      document.getElementById("output").innerHTML =
+        "👉 Cliquez sur le nouvel impact de fléchette.";
+    };
 
-/* =========================
-   NOUVELLE PARTIE
-========================= */
-document.getElementById("resetBtn").onclick = ()=>{
+    /* =========================
+       NOUVELLE PARTIE
+    ========================= */
+    document.getElementById("resetBtn").onclick = () => {
 
-resetGame();
+      resetGame();
 
-img.src = "";
+      img.src = "";
 
-document.getElementById("fileInput").value = "";
+      document.getElementById("fileInput").value = "";
 
-if(currentObjectURL){
-  URL.revokeObjectURL(currentObjectURL);
-  currentObjectURL = null;
-}
+      if (currentObjectURL) {
+        URL.revokeObjectURL(currentObjectURL);
+        currentObjectURL = null;
+      }
 
-canvas.width = 0;
-canvas.height = 0;
+      canvas.width = 0;
+      canvas.height = 0;
 
-warpCanvas.width = 0;
-warpCanvas.height = 0;
-};
-
-
-window.addEventListener(
-  "load",
-  loadDatabase
-);
+      warpCanvas.width = 0;
+      warpCanvas.height = 0;
+    };
 
 
+    window.addEventListener(
+      "load",
+      loadDatabase
+    );
 
-</script>
+
+
+  </script>
 
 </body>
+
 </html>
