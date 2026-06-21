@@ -648,35 +648,73 @@ ctx.fillStyle = "#FF0000";
 ctx.fill();
 }
 
+/* =====================
+   CHARGEMENT BDD CSV
+===================== */
+async function loadCSV(file){
+
+  const text = await fetch(file)
+    .then(r => r.text());
+
+  const lines = text
+    .trim()
+    .split("\n");
+
+  const headers =
+    lines[0]
+      .split(",")
+      .map(h => h.trim());
+
+  return lines.slice(1).map(line => {
+
+    const values = line.split(",");
+
+    let obj = {};
+
+    headers.forEach((h,i)=>{
+      obj[h] = values[i]?.trim() || "";
+    });
+
+    if(obj.lat) obj.lat = parseFloat(obj.lat);
+    if(obj.lon) obj.lon = parseFloat(obj.lon);
+
+    return obj;
+  });
+}
 
 /* =====================
    CHARGEMENT BDD
 ===================== */
 async function loadDatabase(){
-    try{
-if(currentMap === "france"){
 
-  villesDB =
-    await fetch("bdd_villes.json")
-    .then(r=>r.json());
+  try{
 
-}
+    if(currentMap === "france"){
 
-else{
+      villesDB =
+        await loadCSV("bdd_villes.csv");
 
-  villesDB =
-    await fetch("bdd_lyon.json")
-    .then(r=>r.json());
-}
+    }else{
 
-}
-catch(e){
+      villesDB =
+        await loadCSV("bdd_lyon.csv");
 
-  console.error(
-    "Erreur chargement base de donnée",
-    e
-  );
-}
+    }
+
+    console.log(
+      "BDD chargée",
+      villesDB.length,
+      "entrées"
+    );
+
+  }
+  catch(e){
+
+    console.error(
+      "Erreur chargement CSV",
+      e
+    );
+  }
 }
 
 /* =====================
