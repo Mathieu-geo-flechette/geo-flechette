@@ -662,12 +662,12 @@ async function loadCSV(file){
 
   const headers =
     lines[0]
-      .split(",")
+      .split(";")
       .map(h => h.trim());
 
   return lines.slice(1).map(line => {
 
-    const values = line.split(",");
+    const values = line.split(";");
 
     let obj = {};
 
