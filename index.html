@@ -419,176 +419,100 @@
     ========================= */
     function detectCorners(src) {
 
-      let hsv = new cv.Mat();
+      let blurred = new cv.Mat();
+      let gray = new cv.Mat();
+      let edges = new cv.Mat();
 
-      let imageArea =
-        src.cols * src.rows;
+      cv.GaussianBlur(src, blurred, new cv.Size(5, 5), 0);
+      cv.cvtColor(blurred, gray, cv.COLOR_RGBA2GRAY);
 
-      cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
-      cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
-
-      /* =====================
-         DETECTION VERT
-      ===================== */
-      let lowGreen = new cv.Mat(
-        hsv.rows,
-        hsv.cols,
-        hsv.type(),
-        [25, 25, 15, 0]
-      );
-
-      let highGreen = new cv.Mat(
-        hsv.rows,
-        hsv.cols,
-        hsv.type(),
-        [110, 255, 255, 255]
-      );
-
-      /* =====================
-         MASQUES
-      ===================== */
-
-      let mask = new cv.Mat();
-
-      cv.inRange(
-        hsv,
-        lowGreen,
-        highGreen,
-        mask
-      );
-      cv.imshow("canvasWarp", mask);
-
-      /* =====================
-         NETTOYAGE
-      ===================== */
-
-      let kernel = cv.getStructuringElement(
-        cv.MORPH_RECT,
-        new cv.Size(21, 21)
-      );
-
-      cv.morphologyEx(
-        mask,
-        mask,
-        cv.MORPH_CLOSE,
-        kernel
-      );
-
-      /* =====================
-         CONTOURS
-      ===================== */
+      // Détection des contours forts (cadres)
+      cv.Canny(gray, edges, 60, 180);
 
       let contours = new cv.MatVector();
       let hierarchy = new cv.Mat();
 
       cv.findContours(
-        mask,
+        edges,
         contours,
         hierarchy,
-        cv.RETR_EXTERNAL,
+        cv.RETR_TREE, // IMPORTANT pour hiérarchie (cadres imbriqués)
         cv.CHAIN_APPROX_SIMPLE
       );
 
-      let bestQuad = null;
-      let bestArea = 0;
+      let bestPair = null;
+      let bestScore = 0;
 
       for (let i = 0; i < contours.size(); i++) {
 
         let cnt = contours.get(i);
-
         let area = cv.contourArea(cnt);
 
-        if (area < 5000)
-          continue;
+        if (area < 5000) continue;
 
-        let imageArea =
-          src.cols * src.rows;
-
-        if (area < imageArea * 0.30) {
-          continue;
-        }
-
-        let peri = cv.arcLength(
-          cnt,
-          true
-        );
-
+        let peri = cv.arcLength(cnt, true);
         let approx = new cv.Mat();
 
-        cv.approxPolyDP(
-          cnt,
-          approx,
-          0.05 * peri,
-          true
-        );
+        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-        let rect = cv.minAreaRect(cnt);
-
-        let width = rect.size.width;
-        let height = rect.size.height;
-
-        let ratio =
-          Math.max(width, height) /
-          Math.min(width, height);
-
-        if (
-          ratio < 1.3 &&
-          area > bestArea
-        ) {
-          bestArea = area;
-
-          let vertices =
-            cv.RotatedRect.points(rect);
-
-          bestQuad = vertices;
+        if (approx.rows !== 4) {
+          approx.delete();
+          continue;
         }
-        {
-          bestArea = area;
-          bestQuad = approx;
+
+        // rectangle candidate
+        let rect = cv.boundingRect(cnt);
+
+        let child = hierarchy.intPtr(0, i)[2]; // enfant dans hiérarchie
+
+        if (child >= 0) {
+
+          let cnt2 = contours.get(child);
+          let area2 = cv.contourArea(cnt2);
+
+          if (area2 < 3000) continue;
+
+          let approx2 = new cv.Mat();
+          let peri2 = cv.arcLength(cnt2, true);
+
+          cv.approxPolyDP(cnt2, approx2, 0.02 * peri2, true);
+
+          if (approx2.rows !== 4) {
+            approx2.delete();
+            continue;
+          }
+
+          // 🔲 vérif imbriqué + forme similaire
+          let score = area2; // tu peux améliorer avec ratio / distance
+
+          if (score > bestScore) {
+
+            let pts = [];
+
+            for (let k = 0; k < 4; k++) {
+              pts.push({
+                x: approx2.data32S[k * 2],
+                y: approx2.data32S[k * 2 + 1]
+              });
+            }
+
+            bestPair = orderCorners(pts);
+            bestScore = score;
+          }
+
+          approx2.delete();
         }
+
+        approx.delete();
       }
 
-      if (!bestQuad) {
-
-        hsv.delete();
-
-        lowGreen.delete();
-        highGreen.delete();
-
-        mask.delete();
-
-        kernel.delete();
-        contours.delete();
-        hierarchy.delete();
-
-        return null;
-      }
-
-      let d = bestQuad.data32S;
-
-      let pts = [
-        { x: d[0], y: d[1] },
-        { x: d[2], y: d[3] },
-        { x: d[4], y: d[5] },
-        { x: d[6], y: d[7] }
-      ];
-
-      pts = orderCorners(pts);
-
-      hsv.delete();
-
-      lowGreen.delete();
-      highGreen.delete();
-
-      mask.delete();
-
-      kernel.delete();
+      blurred.delete();
+      gray.delete();
+      edges.delete();
       contours.delete();
       hierarchy.delete();
 
-      bestQuad.delete();
-
-      return pts;
+      return bestPair;
     }
 
     function drawCityName(ctx, text, x, y) {
