@@ -6,20 +6,22 @@
   <title>Geo Fléchette France</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #101114;
-      --surface: #181a1f;
-      --surface-2: #20242b;
-      --surface-3: #2a3038;
-      --line: #343a44;
-      --text: #f4f6f8;
-      --muted: #aeb6c2;
-      --accent: #58d68d;
-      --accent-strong: #27ae60;
-      --warn: #ffd166;
-      --danger: #ff6b6b;
-      --info: #72b7ff;
-      --shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+      color-scheme: light;
+      --bg: #f3f0ea;
+      --surface: #fffaf2;
+      --surface-2: #f8efe2;
+      --surface-3: #f0dfcb;
+      --line: #d8c9b7;
+      --text: #2c2420;
+      --muted: #74665b;
+      --accent: #8f3f2a;
+      --accent-strong: #6f301f;
+      --accent-soft: #f4d0bc;
+      --olive: #476348;
+      --warn: #b87413;
+      --danger: #b33a30;
+      --info: #315f72;
+      --shadow: 0 18px 48px rgba(79, 57, 37, 0.14);
       --radius: 8px;
     }
 
@@ -32,7 +34,8 @@
       margin: 0;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
-        linear-gradient(180deg, rgba(88, 214, 141, 0.08), transparent 260px),
+        linear-gradient(180deg, rgba(143, 63, 42, 0.12), transparent 280px),
+        linear-gradient(90deg, rgba(71, 99, 72, 0.08), transparent 520px),
         var(--bg);
       color: var(--text);
     }
@@ -50,7 +53,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       color: var(--text);
-      background: var(--surface-2);
+      background: var(--surface);
     }
 
     button,
@@ -67,7 +70,7 @@
     button:hover:not(:disabled),
     .upload-button:hover {
       background: var(--surface-3);
-      border-color: #596170;
+      border-color: #b99f82;
     }
 
     button:active:not(:disabled),
@@ -89,7 +92,7 @@
     select:focus,
     button:focus-visible,
     .upload-button:focus-within {
-      outline: 3px solid rgba(88, 214, 141, 0.28);
+      outline: 3px solid rgba(143, 63, 42, 0.22);
       outline-offset: 2px;
     }
 
@@ -107,7 +110,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 20px;
-      max-width: 1440px;
+      max-width: 980px;
       margin: 0 auto;
       padding: 20px clamp(14px, 3vw, 32px) 14px;
     }
@@ -155,7 +158,7 @@
       padding: 8px 12px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: rgba(24, 26, 31, 0.86);
+      background: rgba(255, 250, 242, 0.88);
       color: var(--muted);
       font-size: 0.9rem;
       white-space: nowrap;
@@ -179,9 +182,9 @@
 
     .app-shell {
       display: grid;
-      grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+      grid-template-columns: 1fr;
       gap: 16px;
-      max-width: 1440px;
+      max-width: 980px;
       margin: 0 auto;
       padding: 0 clamp(14px, 3vw, 32px) 28px;
     }
@@ -191,13 +194,13 @@
     .result-panel {
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(24, 26, 31, 0.94);
+      background: rgba(255, 250, 242, 0.94);
       box-shadow: var(--shadow);
     }
 
     .control-panel {
-      position: sticky;
-      top: 12px;
+      position: static;
+      top: auto;
       align-self: start;
       overflow: hidden;
     }
@@ -239,9 +242,9 @@
     }
 
     .segment[aria-pressed="true"] {
-      border-color: rgba(88, 214, 141, 0.72);
-      background: rgba(88, 214, 141, 0.14);
-      color: #eafff0;
+      border-color: rgba(143, 63, 42, 0.62);
+      background: rgba(143, 63, 42, 0.12);
+      color: var(--accent-strong);
     }
 
     .field {
@@ -260,8 +263,8 @@
       width: 100%;
       min-height: 52px;
       border-style: dashed;
-      background: rgba(88, 214, 141, 0.1);
-      border-color: rgba(88, 214, 141, 0.48);
+      background: rgba(143, 63, 42, 0.1);
+      border-color: rgba(143, 63, 42, 0.42);
       font-weight: 800;
     }
 
@@ -285,7 +288,7 @@
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: #121418;
+      background: #fff7ed;
     }
 
     .status-box strong {
@@ -293,15 +296,15 @@
     }
 
     .status-box[data-tone="success"] {
-      border-color: rgba(88, 214, 141, 0.5);
+      border-color: rgba(71, 99, 72, 0.48);
     }
 
     .status-box[data-tone="warning"] {
-      border-color: rgba(255, 209, 102, 0.55);
+      border-color: rgba(184, 116, 19, 0.45);
     }
 
     .status-box[data-tone="error"] {
-      border-color: rgba(255, 107, 107, 0.58);
+      border-color: rgba(179, 58, 48, 0.45);
     }
 
     .workspace {
@@ -336,11 +339,11 @@
       position: relative;
       min-height: 320px;
       background:
-        linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
-        linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%),
-        linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%),
-        #0d0f12;
+        linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+        #2f2925;
       background-position: 0 0, 0 12px, 12px -12px, -12px 0;
       background-size: 24px 24px;
     }
@@ -350,6 +353,7 @@
       width: 100%;
       height: auto;
       max-height: 72vh;
+      touch-action: pan-y;
     }
 
     #canvas.is-clickable {
@@ -364,7 +368,7 @@
       padding: 24px;
       color: var(--muted);
       text-align: center;
-      pointer-events: none;
+      pointer-events: auto;
     }
 
     .empty-state.is-hidden {
@@ -413,7 +417,7 @@
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: #121418;
+      background: #fff7ed;
     }
 
     .result-item dt {
@@ -446,7 +450,7 @@
     }
 
     .primary-link:hover {
-      background: #219653;
+      background: #8f3f2a;
       text-decoration: none;
     }
 
@@ -475,6 +479,123 @@
       vertical-align: -2px;
     }
 
+    .setup-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .step-card {
+      padding: 18px;
+    }
+
+    .step-kicker {
+      display: inline-flex;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .step-card h2 {
+      margin-bottom: 6px;
+      font-size: clamp(1.1rem, 1rem + 0.6vw, 1.45rem);
+    }
+
+    .step-card p {
+      margin-bottom: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .work-card .canvas-shell {
+      min-height: 420px;
+      display: grid;
+      place-items: center;
+    }
+
+    .work-card canvas {
+      max-height: min(72vh, 760px);
+      object-fit: contain;
+    }
+
+    .upload-empty {
+      display: grid;
+      gap: 12px;
+      width: min(360px, 100%);
+      pointer-events: auto;
+    }
+
+    .upload-empty .hint {
+      margin: 0;
+      color: #e9ded0;
+    }
+
+    .corner-help {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .corner-help[hidden] {
+      display: none;
+    }
+
+    .corner-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff7ed;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .corner-dot.is-done {
+      border-color: rgba(71, 99, 72, 0.45);
+      color: var(--olive);
+    }
+
+    .action-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 0.55fr);
+      gap: 12px;
+      align-items: stretch;
+      padding: 16px;
+    }
+
+    .action-panel .actions {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-content: start;
+    }
+
+    .secondary-button {
+      background: #fffaf2;
+    }
+
+    .danger-button {
+      border-color: rgba(179, 58, 48, 0.28);
+      color: var(--danger);
+    }
+
+    .message[data-tone="success"] h2 {
+      color: var(--olive);
+    }
+
+    .message[data-tone="error"] h2 {
+      color: var(--danger);
+    }
+
+    .message[data-tone="warning"] h2 {
+      color: var(--warn);
+    }
+
     @keyframes spin {
       to {
         transform: rotate(360deg);
@@ -496,6 +617,10 @@
       }
 
       .views {
+        grid-template-columns: 1fr;
+      }
+
+      .action-panel {
         grid-template-columns: 1fr;
       }
     }
@@ -527,6 +652,11 @@
         width: 100%;
         justify-content: center;
       }
+
+      .setup-grid,
+      .action-panel .actions {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -535,13 +665,13 @@
     <div class="title-block">
       <p class="eyebrow">Geo Fléchette</p>
       <h1>Carte, impact, destination.</h1>
-      <p class="subtitle">Chargez une photo complète de la cible, touchez l’impact, puis laissez l’analyse replacer le point sur la carte.</p>
+      <p class="subtitle">Choisissez la cible, chargez la photo, puis touchez l’impact sur la carte recadrée. L’app s’occupe du reste.</p>
     </div>
     <div id="engineState" class="engine-pill">Analyse en veille</div>
   </header>
 
   <main class="app-shell">
-    <aside class="control-panel" aria-label="Réglages">
+    <section class="control-panel setup-grid" aria-label="Réglages">
       <section class="control-group">
         <h2 class="control-title">Carte</h2>
         <div class="segmented" role="group" aria-label="Choix de la carte">
@@ -551,59 +681,49 @@
       </section>
 
       <section id="optionsPanel" class="control-group" aria-label="Options de résultat"></section>
+    </section>
 
-      <section class="control-group">
-        <h2 class="control-title">Photo</h2>
-        <label class="upload-button" for="fileInput">
-          Choisir une photo
-          <input id="fileInput" type="file" accept="image/*,.heic,.heif" />
-        </label>
-        <p id="fileMeta" class="hint">Formats acceptés : JPEG, PNG, WebP, HEIC.</p>
-      </section>
-
-      <section class="control-group">
-        <h2 class="control-title">Actions</h2>
-        <div class="actions">
-          <button id="retryBtn" type="button" disabled>Reprendre l’impact</button>
-          <button id="resetBtn" type="button" disabled>Nouvelle partie</button>
-        </div>
-      </section>
-
-      <section class="control-group">
-        <div id="statusBox" class="status-box" data-tone="info" role="status" aria-live="polite">
-          <strong id="statusTitle">Prêt</strong>
-          <span id="statusText" class="status-text">Chargez une photo pour commencer.</span>
-        </div>
-      </section>
-    </aside>
+    <section class="control-panel step-card" aria-live="polite">
+      <span class="step-kicker">Étape en cours</span>
+      <h2 id="stepTitle">Choisir une photo</h2>
+      <p id="stepText">Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.</p>
+    </section>
 
     <section class="workspace" aria-label="Analyse de la cible">
-      <div class="views">
-        <article class="canvas-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">Photo</h2>
-            <span id="photoMeta" class="meta">Aucune image</span>
+      <article class="canvas-panel work-card">
+        <div class="panel-header">
+          <h2 id="workTitle" class="panel-title">Zone de jeu</h2>
+          <span id="photoMeta" class="meta">Aucune image</span>
+        </div>
+        <div class="canvas-shell">
+          <canvas id="canvas" width="960" height="640" aria-label="Photo de la cible"></canvas>
+          <div id="photoEmpty" class="empty-state">
+            <div class="upload-empty">
+              <label class="upload-button" for="fileInput">
+                Choisir une photo
+                <input id="fileInput" type="file" accept="image/*,.heic,.heif" />
+              </label>
+              <p id="fileMeta" class="hint">Formats acceptés : JPEG, PNG, WebP, HEIC.</p>
+            </div>
           </div>
-          <div class="canvas-shell">
-            <canvas id="canvas" width="960" height="640" aria-label="Photo de la cible"></canvas>
-            <div id="photoEmpty" class="empty-state">La photo apparaîtra ici.</div>
-          </div>
-        </article>
-
-        <article class="canvas-panel">
-          <div class="panel-header">
-            <h2 class="panel-title">Résultat</h2>
-            <span id="resultMeta" class="meta">En attente</span>
-          </div>
-          <div class="canvas-shell">
-            <canvas id="canvasWarp" width="960" height="640" aria-label="Carte redressée"></canvas>
-            <div id="resultEmpty" class="empty-state">Le point replacé sur la carte apparaîtra ici.</div>
-          </div>
-        </article>
-      </div>
-
-      <section id="output" class="result-panel" aria-live="polite"></section>
+        </div>
+        <div id="cornerHelp" class="corner-help" hidden aria-label="Coins du cadre"></div>
+      </article>
     </section>
+
+    <section class="control-panel action-panel" aria-label="Actions">
+      <div class="actions">
+        <button id="manualFrameBtn" class="secondary-button" type="button" disabled>Reprendre les coins</button>
+        <button id="retryBtn" class="secondary-button" type="button" disabled>Reprendre l’impact</button>
+        <button id="resetBtn" class="danger-button" type="button" disabled>Nouvelle partie</button>
+      </div>
+      <div id="statusBox" class="status-box" data-tone="info" role="status" aria-live="polite">
+        <strong id="statusTitle">Prêt</strong>
+        <span id="statusText" class="status-text">Chargez une photo pour commencer.</span>
+      </div>
+    </section>
+
+    <section id="output" class="result-panel" aria-live="polite"></section>
   </main>
 
   <script>
@@ -638,13 +758,15 @@
 
       const els = {
         canvas: document.getElementById("canvas"),
-        warpCanvas: document.getElementById("canvasWarp"),
         fileInput: document.getElementById("fileInput"),
         fileMeta: document.getElementById("fileMeta"),
         photoMeta: document.getElementById("photoMeta"),
-        resultMeta: document.getElementById("resultMeta"),
         photoEmpty: document.getElementById("photoEmpty"),
-        resultEmpty: document.getElementById("resultEmpty"),
+        stepTitle: document.getElementById("stepTitle"),
+        stepText: document.getElementById("stepText"),
+        workTitle: document.getElementById("workTitle"),
+        cornerHelp: document.getElementById("cornerHelp"),
+        manualFrameBtn: document.getElementById("manualFrameBtn"),
         retryBtn: document.getElementById("retryBtn"),
         resetBtn: document.getElementById("resetBtn"),
         output: document.getElementById("output"),
@@ -657,17 +779,25 @@
       };
 
       const ctx = els.canvas.getContext("2d", { alpha: false });
-      const wctx = els.warpCanvas.getContext("2d", { alpha: false });
       const numberFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
+      const CORNER_LABELS = ["Haut gauche", "Haut droit", "Bas droit", "Bas gauche"];
 
       const state = {
         currentMap: "france",
         resultMode: "database",
         lyonMode: "all",
+        stage: "empty",
         image: null,
         imageReady: false,
         imageName: "",
         clickPoint: null,
+        frameCorners: null,
+        frameConfidence: null,
+        manualCorners: [],
+        targetReady: false,
+        targetCanvas: document.createElement("canvas"),
+        targetSize: { width: 0, height: 0 },
+        pointerIntent: null,
         busy: false,
         cvPromise: null,
         heicPromise: null,
@@ -683,9 +813,9 @@
 
       function init() {
         clearCanvas(ctx, els.canvas);
-        clearCanvas(wctx, els.warpCanvas);
         renderOptions();
-        showMessage("info", "Prêt", "Chargez une photo de la cible, puis touchez l’impact sur l’image.");
+        showMessage("info", "Prêt", "Chargez une photo de la cible pour commencer.");
+        setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         bindEvents();
         syncControls();
         loadDatabase("france").catch(() => {});
@@ -694,7 +824,11 @@
 
       function bindEvents() {
         els.fileInput.addEventListener("change", handleFileChange);
-        els.canvas.addEventListener("pointerdown", handleImpactPointer);
+        els.canvas.addEventListener("pointerdown", handleCanvasPointerDown);
+        els.canvas.addEventListener("pointermove", handleCanvasPointerMove);
+        els.canvas.addEventListener("pointerup", handleCanvasPointerUp);
+        els.canvas.addEventListener("pointercancel", clearPointerIntent);
+        els.manualFrameBtn.addEventListener("click", () => startManualCorners("Reprendre les coins", "Touchez les quatre coins du cadre sur la photo originale."));
         els.retryBtn.addEventListener("click", retryImpact);
         els.resetBtn.addEventListener("click", resetGame);
 
@@ -709,16 +843,23 @@
 
       function syncControls() {
         const canUseImage = state.imageReady && !state.busy;
-        els.retryBtn.disabled = !canUseImage;
-        els.resetBtn.disabled = !state.imageReady && !state.clickPoint;
+        const canSelectOnCanvas = canUseImage && (state.stage === "manualCorners" || state.targetReady);
+        els.manualFrameBtn.disabled = !canUseImage;
+        els.retryBtn.disabled = !state.targetReady || state.busy;
+        els.resetBtn.disabled = !state.imageReady && !state.clickPoint && !state.targetReady;
         els.fileInput.disabled = state.busy;
-        els.canvas.classList.toggle("is-clickable", canUseImage);
+        els.canvas.classList.toggle("is-clickable", canSelectOnCanvas);
 
         for (const button of els.mapButtons) {
           const isCurrent = button.dataset.map === state.currentMap;
           button.setAttribute("aria-pressed", String(isCurrent));
           button.disabled = state.busy;
         }
+      }
+
+      function setStep(title, text) {
+        els.stepTitle.textContent = title;
+        els.stepText.textContent = text;
       }
 
       function setStatus(title, text, tone = "info") {
@@ -747,14 +888,17 @@
         state.currentMap = map;
         state.runSerial += 1;
         renderOptions();
-        clearResultCanvas();
         setStatus("Carte modifiée", map === "france" ? "Mode France actif." : "Mode Lyon actif.", "info");
         loadDatabase(map).catch(() => {});
 
-        if (state.imageReady) {
+        if (state.targetReady) {
           state.clickPoint = null;
-          drawPhoto();
-          showMessage("info", "Nouvelle carte active", "Touchez l’impact sur la photo pour relancer l’analyse avec cette carte.");
+          drawTarget();
+          showMessage("info", "Nouvelle carte active", "Touchez l’impact sur la cible recadrée pour relancer l’analyse.");
+          setStep("Toucher l’impact", "La cible est recadrée. Touchez le centre de l’impact sur la carte affichée.");
+        } else if (state.imageReady) {
+          drawOriginalPhoto();
+          showMessage("info", "Nouvelle carte active", "Terminez le cadrage de la photo avant de choisir l’impact.");
         }
 
         syncControls();
@@ -780,7 +924,7 @@
           select.value = state.resultMode;
           select.addEventListener("change", () => {
             state.resultMode = select.value;
-            if (state.clickPoint) runAnalysis();
+            if (state.targetReady && state.clickPoint) runAnalysis();
           });
           field.append(select);
           panel.append(field);
@@ -797,7 +941,7 @@
           select.value = state.lyonMode;
           select.addEventListener("change", () => {
             state.lyonMode = select.value;
-            if (state.clickPoint) runAnalysis();
+            if (state.targetReady && state.clickPoint) runAnalysis();
           });
           field.append(select);
           panel.append(field);
@@ -844,32 +988,39 @@
         }
 
         setBusy(true, "Lecture de la photo", "Préparation de l’image...");
+        setStep("Préparer la photo", "L’image est lue puis le cadre de la cible est recherché automatiquement.");
         showMessage("info", "Photo en cours de lecture", "L’image est redimensionnée pour accélérer l’analyse sans perdre les contours utiles.");
-        clearResultCanvas();
+        clearWorkspaceState();
         state.clickPoint = null;
 
         try {
+          const serial = state.runSerial + 1;
+          state.runSerial = serial;
           disposeImage();
           const imageBlob = await maybeConvertHeic(file);
           const image = await decodeImage(imageBlob);
           state.image = image;
           state.imageReady = true;
           state.imageName = file.name || "photo";
+          state.stage = "detecting";
 
-          drawPhoto();
+          drawOriginalPhoto();
           els.photoEmpty.classList.add("is-hidden");
           els.fileMeta.textContent = `${state.imageName} - ${Math.round(file.size / 1024)} Ko`;
           els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
-          showMessage("info", "Photo prête", "Touchez précisément le centre de l’impact sur la photo.");
-          setStatus("Photo prête", "Touchez l’impact pour lancer l’analyse.", "success");
+          setStatus("Cadre en recherche", "La cible est analysée avant recadrage.", "warning");
+
+          await detectAndPrepareTarget(serial);
         } catch (error) {
           console.error(error);
           disposeImage();
           state.imageReady = false;
+          state.stage = "empty";
           clearCanvas(ctx, els.canvas);
           els.photoEmpty.classList.remove("is-hidden");
           showMessage("error", "Image illisible", userImageError(error));
           setStatus("Image illisible", "Essayez une autre photo ou exportez-la en JPEG.", "error");
+          setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         } finally {
           setBusy(false);
         }
@@ -877,7 +1028,7 @@
 
       function isSupportedImage(file) {
         const name = (file.name || "").toLowerCase();
-        return file.type.startsWith("image/") || name.endsWith(".heic") || name.endsWith(".heif");
+        return file.type.startsWith("image/") || /\.(heic|heif|jpe?g|png|webp)$/i.test(name);
       }
 
       function userImageError(error) {
@@ -889,7 +1040,12 @@
 
       async function maybeConvertHeic(file) {
         const name = (file.name || "").toLowerCase();
-        const isHeic = file.type === "image/heic" || file.type === "image/heif" || name.endsWith(".heic") || name.endsWith(".heif");
+        const isHeic =
+          file.type === "image/heic" ||
+          file.type === "image/heif" ||
+          name.endsWith(".heic") ||
+          name.endsWith(".heif") ||
+          await hasHeicSignature(file);
         if (!isHeic) return file;
 
         setStatus("Conversion HEIC", "Conversion en JPEG avant analyse...", "warning");
@@ -900,6 +1056,15 @@
           quality: 0.88
         });
         return Array.isArray(converted) ? converted[0] : converted;
+      }
+
+      async function hasHeicSignature(file) {
+        try {
+          const header = await file.slice(4, 32).text();
+          return /^ftyp(heic|heix|hevc|hevx|heim|heis|hevm|hevs|mif1|msf1|heif)/i.test(header);
+        } catch {
+          return false;
+        }
       }
 
       function decodeImage(blob) {
@@ -930,18 +1095,54 @@
         state.image = null;
       }
 
-      function drawPhoto() {
+      function photoCanvasSize() {
+        if (!state.image) return { width: 960, height: 640 };
+        const scale = Math.min(1, CONFIG.imageMaxSide / Math.max(state.image.width, state.image.height));
+        return {
+          width: Math.max(1, Math.round(state.image.width * scale)),
+          height: Math.max(1, Math.round(state.image.height * scale))
+        };
+      }
+
+      function buildPhotoCanvas() {
+        const size = photoCanvasSize();
+        const sourceCanvas = document.createElement("canvas");
+        sourceCanvas.width = size.width;
+        sourceCanvas.height = size.height;
+        const sourceCtx = sourceCanvas.getContext("2d", { alpha: false });
+        sourceCtx.imageSmoothingEnabled = true;
+        sourceCtx.imageSmoothingQuality = "high";
+        sourceCtx.drawImage(state.image, 0, 0, sourceCanvas.width, sourceCanvas.height);
+        return sourceCanvas;
+      }
+
+      function drawOriginalPhoto() {
         if (!state.image) return;
 
-        const width = state.image.width;
-        const height = state.image.height;
-        const scale = Math.min(1, CONFIG.imageMaxSide / Math.max(width, height));
+        const sourceCanvas = buildPhotoCanvas();
+        els.canvas.width = sourceCanvas.width;
+        els.canvas.height = sourceCanvas.height;
+        ctx.drawImage(sourceCanvas, 0, 0);
+        els.workTitle.textContent = state.stage === "manualCorners" ? "Photo originale" : "Photo chargée";
+        els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
 
-        els.canvas.width = Math.max(1, Math.round(width * scale));
-        els.canvas.height = Math.max(1, Math.round(height * scale));
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(state.image, 0, 0, els.canvas.width, els.canvas.height);
+        if (state.frameCorners && state.stage !== "manualCorners") {
+          drawFrameOutline(ctx, state.frameCorners, "rgba(71, 99, 72, 0.92)");
+        }
+
+        if (state.stage === "manualCorners") {
+          drawManualCorners();
+        }
+      }
+
+      function drawTarget() {
+        if (!state.targetReady || !state.targetCanvas.width || !state.targetCanvas.height) return;
+
+        els.canvas.width = state.targetCanvas.width;
+        els.canvas.height = state.targetCanvas.height;
+        ctx.drawImage(state.targetCanvas, 0, 0);
+        els.workTitle.textContent = "Cible recadrée";
+        els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
 
         if (state.clickPoint) {
           drawImpact(ctx, state.clickPoint.x, state.clickPoint.y, Math.min(els.canvas.width, els.canvas.height));
@@ -949,99 +1150,90 @@
       }
 
       function clearCanvas(context, canvas) {
-        context.fillStyle = "#0d0f12";
+        context.fillStyle = "#2f2925";
         context.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      function clearResultCanvas() {
-        clearCanvas(wctx, els.warpCanvas);
-        els.resultEmpty.classList.remove("is-hidden");
-        els.resultMeta.textContent = "En attente";
+      function clearWorkspaceState() {
+        state.frameCorners = null;
+        state.frameConfidence = null;
+        state.manualCorners = [];
+        state.targetReady = false;
+        state.targetSize = { width: 0, height: 0 };
+        state.targetCanvas.width = 0;
+        state.targetCanvas.height = 0;
+        state.stage = state.imageReady ? "detecting" : "empty";
+        renderCornerHelp();
       }
 
-      function handleImpactPointer(event) {
-        if (!state.imageReady) {
-          showMessage("warning", "Photo manquante", "Chargez une photo avant de sélectionner l’impact.");
-          return;
-        }
-
-        if (state.busy) return;
-
-        const rect = els.canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) * (els.canvas.width / rect.width);
-        const y = (event.clientY - rect.top) * (els.canvas.height / rect.height);
-
-        if (!Number.isFinite(x) || !Number.isFinite(y)) {
-          showMessage("error", "Impact invalide", "Le point sélectionné n’a pas pu être lu. Réessayez sur la photo.");
-          return;
-        }
-
-        state.clickPoint = { x, y };
-        drawPhoto();
-        runAnalysis();
-      }
-
-      function retryImpact() {
-        if (!state.imageReady) return;
-        state.runSerial += 1;
-        state.clickPoint = null;
-        drawPhoto();
-        clearResultCanvas();
-        showMessage("info", "Impact à reprendre", "Touchez le centre du nouvel impact sur la photo.");
-        setStatus("Impact à reprendre", "Sélectionnez un point sur la photo.", "info");
-      }
-
-      function resetGame() {
-        state.runSerial += 1;
-        state.clickPoint = null;
-        state.imageReady = false;
-        state.imageName = "";
-        disposeImage();
-        els.fileInput.value = "";
-        els.fileMeta.textContent = "Formats acceptés : JPEG, PNG, WebP, HEIC.";
-        els.photoMeta.textContent = "Aucune image";
-        els.resultMeta.textContent = "En attente";
-        clearCanvas(ctx, els.canvas);
-        clearResultCanvas();
-        els.photoEmpty.classList.remove("is-hidden");
-        showMessage("info", "Nouvelle partie", "Chargez une photo de la cible pour commencer.");
-        setStatus("Prêt", "Chargez une photo pour commencer.", "info");
-        syncControls();
-      }
-
-      async function runAnalysis() {
-        const serial = state.runSerial + 1;
-        state.runSerial = serial;
-
-        if (!state.imageReady || !state.clickPoint) return;
-
-        setBusy(true, "Analyse en cours", "Recherche du cadre de la cible...");
-        els.resultMeta.innerHTML = '<span class="spinner" aria-hidden="true"></span> Analyse';
-
+      async function detectAndPrepareTarget(serial) {
         let src = null;
-        let srcPts = null;
-        let dstPts = null;
-        let homography = null;
-        let point = null;
-        let transformed = null;
-        let warped = null;
 
         try {
           await ensureOpenCv();
           if (serial !== state.runSerial) return;
 
-          const sourceCanvas = buildSourceCanvas();
+          const sourceCanvas = buildPhotoCanvas();
           src = cv.imread(sourceCanvas);
-          const corners = detectFrameCorners(src);
+          const detection = detectFrameCorners(src);
 
-          if (!corners) {
-            throw friendlyError(
-              "Cadre introuvable",
-              "Les quatre bords de la cible doivent être visibles. Reprenez la photo plus droite, sans couper le cadre et en évitant les reflets."
+          if (!detection || !detection.corners) {
+            startManualCorners(
+              "Cadre à préciser",
+              "Je n’ai pas un cadre assez fiable. Touchez les quatre coins sur la photo originale.",
+              true
             );
+            setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
+            showMessage("warning", "Cadre à préciser", "Le cadre n’est pas assez net pour être validé automatiquement. Touchez les quatre coins de la cible.");
+            return;
           }
 
-          const size = Math.min(src.cols, src.rows);
+          applyFrameCorners(detection.corners, detection);
+          showMessage("info", "Cible recadrée", "Touchez le centre de l’impact sur la carte affichée.");
+          setStatus("Cible prête", `Cadre détecté (${detection.label}).`, "success");
+        } catch (error) {
+          console.warn("Détection du cadre échouée", error);
+          startManualCorners(
+            "Cadre à préciser",
+            "La détection automatique a échoué. Touchez les quatre coins du cadre sur la photo originale.",
+            true
+          );
+          setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
+          showMessage("warning", "Cadre à préciser", "La sélection manuelle prend le relais pour obtenir un recadrage fiable.");
+        } finally {
+          deleteMat(src);
+        }
+      }
+
+      function applyFrameCorners(corners, detection = null) {
+        const ordered = orderCorners(corners);
+        state.frameCorners = ordered;
+        state.frameConfidence = detection ? detection.confidence : 1;
+        state.manualCorners = [];
+        state.clickPoint = null;
+        warpTargetFromCorners(ordered);
+        state.stage = "impact";
+        drawTarget();
+        renderCornerHelp();
+        setStep("Toucher l’impact", "La cible est recadrée. Touchez le centre de l’impact sur la carte affichée.");
+        syncControls();
+      }
+
+      function warpTargetFromCorners(corners) {
+        let src = null;
+        let srcPts = null;
+        let dstPts = null;
+        let homography = null;
+        let warped = null;
+
+        try {
+          const sourceCanvas = buildPhotoCanvas();
+          src = cv.imread(sourceCanvas);
+          const size = targetDimensions(corners);
+          state.targetSize = size;
+          state.targetCanvas.width = size.width;
+          state.targetCanvas.height = size.height;
+
           srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
             corners[0].x, corners[0].y,
             corners[1].x, corners[1].y,
@@ -1050,66 +1242,266 @@
           ]);
           dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
             0, 0,
-            size, 0,
-            size, size,
-            0, size
+            size.width, 0,
+            size.width, size.height,
+            0, size.height
           ]);
 
           homography = cv.getPerspectiveTransform(srcPts, dstPts);
-          point = cv.matFromArray(1, 1, cv.CV_32FC2, [state.clickPoint.x, state.clickPoint.y]);
-          transformed = new cv.Mat();
-          cv.perspectiveTransform(point, transformed, homography);
-
-          const x = transformed.data32F[0];
-          const y = transformed.data32F[1];
-          if (!Number.isFinite(x) || !Number.isFinite(y)) {
-            throw friendlyError("Impact illisible", "Le point sélectionné n’a pas pu être replacé sur la carte. Sélectionnez le centre de l’impact.");
-          }
-
-          if (x < -size * 0.04 || x > size * 1.04 || y < -size * 0.04 || y > size * 1.04) {
-            throw friendlyError("Impact hors carte", "Le point sélectionné tombe hors du cadre détecté. Vérifiez la photo ou reprenez l’impact.");
-          }
-
-          const clampedX = clamp(x, 0, size);
-          const clampedY = clamp(y, 0, size);
           warped = new cv.Mat();
-          els.warpCanvas.width = size;
-          els.warpCanvas.height = size;
-          cv.warpPerspective(src, warped, homography, new cv.Size(size, size), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-          cv.imshow("canvasWarp", warped);
-          drawImpact(wctx, clampedX, clampedY, size);
-
-          const coordinates = pointToCoordinates(clampedX, clampedY, size, state.currentMap);
-          await renderDestination(coordinates, clampedX, clampedY, size, serial);
-          els.resultEmpty.classList.add("is-hidden");
-          els.resultMeta.textContent = `${Math.round(size)} x ${Math.round(size)}px`;
-          setStatus("Analyse terminée", "Résultat calculé.", "success");
-        } catch (error) {
-          console.error(error);
-          clearResultCanvas();
-          showMessage("error", error.title || "Analyse impossible", error.userMessage || "Une erreur inattendue a empêché l’analyse. Rechargez la photo puis réessayez.");
-          setStatus(error.title || "Analyse impossible", error.userMessage || "Réessayez avec une photo plus nette.", "error");
+          cv.warpPerspective(src, warped, homography, new cv.Size(size.width, size.height), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+          cv.imshow(state.targetCanvas, warped);
+          state.targetReady = true;
         } finally {
           deleteMat(src);
           deleteMat(srcPts);
           deleteMat(dstPts);
           deleteMat(homography);
-          deleteMat(point);
-          deleteMat(transformed);
           deleteMat(warped);
+        }
+      }
+
+      function targetDimensions(corners) {
+        const top = distance(corners[0], corners[1]);
+        const right = distance(corners[1], corners[2]);
+        const bottom = distance(corners[2], corners[3]);
+        const left = distance(corners[3], corners[0]);
+        let width = Math.max(top, bottom);
+        let height = Math.max(left, right);
+        const maxSide = 1400;
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        width = clamp(Math.round(width * scale), 240, maxSide);
+        height = clamp(Math.round(height * scale), 240, maxSide);
+        return { width, height };
+      }
+
+      function startManualCorners(title = "Reprendre les coins", text = "Touchez les quatre coins du cadre sur la photo originale.", force = false) {
+        if (!state.imageReady || (state.busy && !force)) return;
+        state.runSerial += 1;
+        state.stage = "manualCorners";
+        state.targetReady = false;
+        state.clickPoint = null;
+        state.manualCorners = [];
+        state.targetCanvas.width = 0;
+        state.targetCanvas.height = 0;
+        drawOriginalPhoto();
+        renderCornerHelp();
+        setStep(title, text);
+        showMessage("info", "Coins du cadre", "Touchez les quatre coins du rectangle. L’app remettra les coins dans le bon ordre avant le recadrage.");
+        setStatus("Sélection manuelle", "Touchez les quatre coins du cadre.", "info");
+        syncControls();
+      }
+
+      function handleCanvasPointerDown(event) {
+        if (!isCanvasInteractive()) return;
+        state.pointerIntent = {
+          id: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          time: performance.now(),
+          canceled: false
+        };
+      }
+
+      function handleCanvasPointerMove(event) {
+        const intent = state.pointerIntent;
+        if (!intent || intent.id !== event.pointerId) return;
+        if (Math.hypot(event.clientX - intent.x, event.clientY - intent.y) > 10) {
+          intent.canceled = true;
+        }
+      }
+
+      function handleCanvasPointerUp(event) {
+        const intent = state.pointerIntent;
+        state.pointerIntent = null;
+        if (!intent || intent.id !== event.pointerId || intent.canceled) return;
+
+        const moved = Math.hypot(event.clientX - intent.x, event.clientY - intent.y);
+        const elapsed = performance.now() - intent.time;
+        if (moved > 10 || elapsed > 1200 || !isCanvasInteractive()) return;
+
+        const point = canvasPointFromEvent(event);
+        if (!point) return;
+
+        if (state.stage === "manualCorners") {
+          addManualCorner(point);
+        } else if (state.targetReady) {
+          selectImpact(point);
+        }
+      }
+
+      function clearPointerIntent() {
+        state.pointerIntent = null;
+      }
+
+      function isCanvasInteractive() {
+        return state.imageReady && !state.busy && (state.stage === "manualCorners" || state.targetReady);
+      }
+
+      function canvasPointFromEvent(event) {
+        const rect = els.canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (els.canvas.width / rect.width);
+        const y = (event.clientY - rect.top) * (els.canvas.height / rect.height);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x > els.canvas.width || y > els.canvas.height) {
+          return null;
+        }
+        return { x, y };
+      }
+
+      function addManualCorner(point) {
+        state.manualCorners.push(point);
+        drawOriginalPhoto();
+        renderCornerHelp();
+
+        if (state.manualCorners.length < 4) {
+          const next = CORNER_LABELS[state.manualCorners.length] || "coin suivant";
+          setStep("Placer les coins", `Coin enregistré. Touchez maintenant : ${next}.`);
+          setStatus("Coins du cadre", `${state.manualCorners.length}/4 coins sélectionnés.`, "info");
+          return;
+        }
+
+        const corners = orderCorners(state.manualCorners.slice(0, 4));
+        try {
+          applyFrameCorners(corners, { confidence: 1, label: "manuel" });
+          showMessage("info", "Cible recadrée", "Touchez le centre de l’impact sur la carte affichée.");
+          setStatus("Cible prête", "Cadre manuel appliqué.", "success");
+        } catch (error) {
+          console.error(error);
+          state.manualCorners = [];
+          drawOriginalPhoto();
+          renderCornerHelp();
+          showMessage("error", "Recadrage impossible", "Le recadrage n’a pas pu être appliqué. Vérifiez le moteur d’analyse, puis reprenez les coins.");
+          setStatus("Recadrage impossible", "Reprenez les quatre coins du cadre.", "error");
+        }
+      }
+
+      function selectImpact(point) {
+        if (!state.targetReady) return;
+        state.clickPoint = {
+          x: clamp(point.x, 0, state.targetSize.width),
+          y: clamp(point.y, 0, state.targetSize.height)
+        };
+        state.stage = "result";
+        drawTarget();
+        runAnalysis();
+      }
+
+      function retryImpact() {
+        if (!state.targetReady) return;
+        state.runSerial += 1;
+        state.clickPoint = null;
+        state.stage = "impact";
+        drawTarget();
+        showMessage("info", "Impact à reprendre", "Touchez le centre du nouvel impact sur la cible recadrée.");
+        setStatus("Impact à reprendre", "Sélectionnez un point sur la cible.", "info");
+        setStep("Toucher l’impact", "Touchez le centre de l’impact sur la carte affichée.");
+        syncControls();
+      }
+
+      function resetGame() {
+        state.runSerial += 1;
+        state.clickPoint = null;
+        state.imageReady = false;
+        state.imageName = "";
+        state.stage = "empty";
+        disposeImage();
+        clearWorkspaceState();
+        els.fileInput.value = "";
+        els.fileMeta.textContent = "Formats acceptés : JPEG, PNG, WebP, HEIC.";
+        els.photoMeta.textContent = "Aucune image";
+        els.workTitle.textContent = "Zone de jeu";
+        clearCanvas(ctx, els.canvas);
+        els.photoEmpty.classList.remove("is-hidden");
+        showMessage("info", "Nouvelle partie", "Chargez une photo de la cible pour commencer.");
+        setStatus("Prêt", "Chargez une photo pour commencer.", "info");
+        setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
+        syncControls();
+      }
+
+      async function runAnalysis() {
+        const serial = state.runSerial + 1;
+        state.runSerial = serial;
+
+        if (!state.targetReady || !state.clickPoint) return;
+
+        setBusy(true, "Résultat en cours", "Recherche de la destination...");
+
+        try {
+          const x = clamp(state.clickPoint.x, 0, state.targetSize.width);
+          const y = clamp(state.clickPoint.y, 0, state.targetSize.height);
+          drawTarget();
+
+          const coordinates = pointToCoordinates(x, y, state.targetSize.width, state.targetSize.height, state.currentMap);
+          await renderDestination(coordinates, x, y, state.targetSize, serial);
+          setStep("Résultat", "La destination est affichée. Vous pouvez reprendre l’impact ou lancer une nouvelle partie.");
+          setStatus("Analyse terminée", "Résultat calculé.", "success");
+        } catch (error) {
+          console.error(error);
+          drawTarget();
+          showMessage("error", error.title || "Analyse impossible", error.userMessage || "Une erreur inattendue a empêché l’analyse. Réessayez avec l’impact ou les coins.");
+          setStatus(error.title || "Analyse impossible", error.userMessage || "Réessayez avec l’impact ou les coins.", "error");
+        } finally {
           if (serial === state.runSerial) setBusy(false);
         }
       }
 
-      function buildSourceCanvas() {
-        const sourceCanvas = document.createElement("canvas");
-        sourceCanvas.width = els.canvas.width;
-        sourceCanvas.height = els.canvas.height;
-        const sourceCtx = sourceCanvas.getContext("2d", { alpha: false });
-        sourceCtx.imageSmoothingEnabled = true;
-        sourceCtx.imageSmoothingQuality = "high";
-        sourceCtx.drawImage(state.image, 0, 0, sourceCanvas.width, sourceCanvas.height);
-        return sourceCanvas;
+      function renderCornerHelp() {
+        els.cornerHelp.replaceChildren();
+        if (state.stage !== "manualCorners") {
+          els.cornerHelp.hidden = true;
+          return;
+        }
+
+        els.cornerHelp.hidden = false;
+        for (let i = 0; i < CORNER_LABELS.length; i += 1) {
+          const item = document.createElement("span");
+          item.className = "corner-dot";
+          item.classList.toggle("is-done", i < state.manualCorners.length);
+          item.textContent = `${i + 1}. ${CORNER_LABELS[i]}`;
+          els.cornerHelp.append(item);
+        }
+      }
+
+      function drawManualCorners() {
+        for (let i = 0; i < state.manualCorners.length; i += 1) {
+          const point = state.manualCorners[i];
+          const radius = clamp(Math.min(els.canvas.width, els.canvas.height) * 0.018, 9, 18);
+          ctx.save();
+          ctx.fillStyle = "#8f3f2a";
+          ctx.strokeStyle = "#fffaf2";
+          ctx.lineWidth = Math.max(3, radius * 0.32);
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#fffaf2";
+          ctx.font = `800 ${Math.max(12, radius * 1.05)}px Inter, Arial, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(String(i + 1), point.x, point.y + 0.5);
+          ctx.restore();
+        }
+
+        if (state.manualCorners.length >= 2) {
+          drawFrameOutline(ctx, state.manualCorners, "rgba(143, 63, 42, 0.88)", state.manualCorners.length === 4);
+        }
+      }
+
+      function drawFrameOutline(context, points, color, closePath = true) {
+        if (!points || points.length < 2) return;
+        const minSize = Math.min(els.canvas.width, els.canvas.height);
+        context.save();
+        context.strokeStyle = color;
+        context.lineWidth = clamp(minSize * 0.006, 3, 10);
+        context.setLineDash([clamp(minSize * 0.018, 12, 28), clamp(minSize * 0.012, 8, 20)]);
+        context.beginPath();
+        context.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i += 1) {
+          context.lineTo(points[i].x, points[i].y);
+        }
+        if (closePath && points.length >= 4) context.closePath();
+        context.stroke();
+        context.restore();
       }
 
       async function renderDestination(coordinates, x, y, size, serial) {
@@ -1137,7 +1529,7 @@
         }
 
         const name = nearest.place.nom || nearest.place.name || "Ville inconnue";
-        drawLabel(wctx, name, x, y, size);
+        drawLabel(ctx, name, x, y, size);
         renderFranceResult({
           title: name,
           coordinates,
@@ -1151,7 +1543,7 @@
         showMessage("info", "Géocodage en cours", "Recherche de la ville réelle touchée...");
         const place = await reverseGeocode(coordinates.lat, coordinates.lon);
         const city = place.city || "Lieu inconnu";
-        drawLabel(wctx, city, x, y, size);
+        drawLabel(ctx, city, x, y, size);
         renderFranceResult({
           title: city,
           coordinates,
@@ -1179,7 +1571,7 @@
         }
 
         const name = nearest.place.nom || nearest.place.name || "Lieu inconnu";
-        drawLabel(wctx, name, x, y, size);
+        drawLabel(ctx, name, x, y, size);
         renderLyonResult(nearest, coordinates);
       }
 
@@ -1292,11 +1684,11 @@
         els.output.querySelector(".message")?.append(wiki);
       }
 
-      function pointToCoordinates(x, y, size, map) {
+      function pointToCoordinates(x, y, width, height, map) {
         const zone = CONFIG.zones[map];
         return {
-          lon: zone.lonMin + (x / size) * (zone.lonMax - zone.lonMin),
-          lat: zone.latMax - (y / size) * (zone.latMax - zone.latMin)
+          lon: zone.lonMin + (x / width) * (zone.lonMax - zone.lonMin),
+          lat: zone.latMax - (y / height) * (zone.latMax - zone.latMin)
         };
       }
 
@@ -1324,10 +1716,13 @@
       }
 
       function drawLabel(context, text, x, y, size) {
+        const widthLimit = typeof size === "number" ? size : size.width;
+        const heightLimit = typeof size === "number" ? size : size.height;
+        const baseSize = Math.min(widthLimit, heightLimit);
         const label = String(text || "Lieu inconnu").trim();
-        const padding = Math.max(12, size * 0.018);
-        const maxWidth = size - padding * 2;
-        let fontSize = clamp(size * 0.055, 24, 62);
+        const padding = Math.max(12, baseSize * 0.018);
+        const maxWidth = widthLimit - padding * 2;
+        let fontSize = clamp(baseSize * 0.055, 24, 62);
 
         context.save();
         do {
@@ -1340,10 +1735,10 @@
         let labelX = x + padding;
         let labelY = y - padding;
 
-        if (labelX + width > size - padding) labelX = size - padding - width;
+        if (labelX + width > widthLimit - padding) labelX = widthLimit - padding - width;
         if (labelX < padding) labelX = padding;
         if (labelY < fontSize + padding) labelY = y + fontSize + padding;
-        if (labelY > size - padding) labelY = size - padding;
+        if (labelY > heightLimit - padding) labelY = heightLimit - padding;
 
         context.lineJoin = "round";
         context.strokeStyle = "rgba(0, 0, 0, 0.88)";
@@ -1367,13 +1762,29 @@
             work = src.clone();
           }
 
-          return detectGreenFrame(work, scale) || detectEdgeFrame(work, scale);
+          const candidates = [];
+          collectEdgeCandidates(work, candidates);
+          collectAdaptiveColorCandidates(work, candidates);
+          collectAdaptiveThresholdCandidates(work, candidates);
+          collectHoughCandidates(work, candidates);
+
+          const best = chooseFrameCandidate(work, candidates);
+          if (!best || best.confidence < 0.54) return null;
+
+          return {
+            corners: best.points.map((point) => ({
+              x: point.x / scale,
+              y: point.y / scale
+            })),
+            confidence: best.confidence,
+            label: best.label
+          };
         } finally {
           deleteMat(work);
         }
       }
 
-      function detectGreenFrame(src, scale) {
+      function collectAdaptiveColorCandidates(src, candidates) {
         let rgb = null;
         let hsv = null;
         let mask = null;
@@ -1390,20 +1801,20 @@
           cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
           cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
 
-          low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [32, 35, 35, 0]);
-          high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [98, 255, 255, 255]);
+          low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [0, 42, 36, 0]);
+          high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [179, 255, 255, 255]);
           cv.inRange(hsv, low, high, mask);
 
-          kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(7, 7));
+          kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(9, 9));
+          cv.morphologyEx(mask, mask, cv.MORPH_OPEN, kernel);
           cv.morphologyEx(mask, mask, cv.MORPH_CLOSE, kernel);
 
           contours = new cv.MatVector();
           hierarchy = new cv.Mat();
           cv.findContours(mask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-          return findBestQuad(contours, src.cols * src.rows, scale);
+          collectQuadCandidates(contours, src.cols * src.rows, "couleur adaptative", 0.9, candidates);
         } catch (error) {
-          console.warn("Détection couleur échouée", error);
-          return null;
+          console.warn("Détection couleur adaptative échouée", error);
         } finally {
           deleteMat(rgb);
           deleteMat(hsv);
@@ -1416,7 +1827,7 @@
         }
       }
 
-      function detectEdgeFrame(src, scale) {
+      function collectEdgeCandidates(src, candidates) {
         let gray = null;
         let blurred = null;
         let edges = null;
@@ -1430,15 +1841,15 @@
           edges = new cv.Mat();
           cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
           cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-          cv.Canny(blurred, edges, 55, 165);
+          cv.Canny(blurred, edges, 42, 150);
 
-          kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5));
+          kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(7, 7));
           cv.morphologyEx(edges, edges, cv.MORPH_CLOSE, kernel);
 
           contours = new cv.MatVector();
           hierarchy = new cv.Mat();
           cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-          return findBestQuad(contours, src.cols * src.rows, scale);
+          collectQuadCandidates(contours, src.cols * src.rows, "contours", 1, candidates);
         } finally {
           deleteMat(gray);
           deleteMat(blurred);
@@ -1449,13 +1860,96 @@
         }
       }
 
-      function findBestQuad(contours, imageArea, scale) {
-        if (!contours || contours.size() === 0) return null;
+      function collectAdaptiveThresholdCandidates(src, candidates) {
+        let gray = null;
+        let blurred = null;
+        let mask = null;
+        let kernel = null;
+        let contours = null;
+        let hierarchy = null;
+
+        try {
+          gray = new cv.Mat();
+          blurred = new cv.Mat();
+          mask = new cv.Mat();
+          cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+          cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+          cv.adaptiveThreshold(blurred, mask, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 41, 7);
+
+          kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(7, 7));
+          cv.morphologyEx(mask, mask, cv.MORPH_CLOSE, kernel);
+
+          contours = new cv.MatVector();
+          hierarchy = new cv.Mat();
+          cv.findContours(mask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+          collectQuadCandidates(contours, src.cols * src.rows, "contraste", 0.86, candidates);
+        } finally {
+          deleteMat(gray);
+          deleteMat(blurred);
+          deleteMat(mask);
+          deleteMat(kernel);
+          deleteMat(contours);
+          deleteMat(hierarchy);
+        }
+      }
+
+      function collectHoughCandidates(src, candidates) {
+        let gray = null;
+        let blurred = null;
+        let edges = null;
+        let lines = null;
+
+        try {
+          gray = new cv.Mat();
+          blurred = new cv.Mat();
+          edges = new cv.Mat();
+          lines = new cv.Mat();
+          cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+          cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+          cv.Canny(blurred, edges, 38, 135);
+
+          const minSide = Math.min(src.cols, src.rows);
+          cv.HoughLinesP(edges, lines, 1, Math.PI / 180, Math.max(50, Math.round(minSide * 0.08)), Math.max(45, Math.round(minSide * 0.18)), Math.max(10, Math.round(minSide * 0.025)));
+          const segments = [];
+          for (let i = 0; i < lines.rows; i += 1) {
+            const x1 = lines.data32S[i * 4];
+            const y1 = lines.data32S[i * 4 + 1];
+            const x2 = lines.data32S[i * 4 + 2];
+            const y2 = lines.data32S[i * 4 + 3];
+            const length = Math.hypot(x2 - x1, y2 - y1);
+            if (length < minSide * 0.12) continue;
+            let angle = Math.atan2(y2 - y1, x2 - x1);
+            if (angle < 0) angle += Math.PI;
+            segments.push({ x1, y1, x2, y2, length, angle });
+          }
+
+          const groups = dominantLineGroups(segments);
+          if (groups.length < 2) return;
+
+          for (let i = 0; i < groups.length - 1; i += 1) {
+            for (let j = i + 1; j < groups.length; j += 1) {
+              const angleDiff = Math.abs(groups[i].angle - groups[j].angle);
+              const normalizedDiff = Math.min(angleDiff, Math.PI - angleDiff);
+              if (normalizedDiff < Math.PI * 0.28 || normalizedDiff > Math.PI * 0.72) continue;
+              const points = quadFromLineGroups(groups[i].segments, groups[j].segments, src.cols, src.rows);
+              if (points) candidates.push({ points: orderCorners(points), label: "segments interrompus", methodWeight: 0.92 });
+            }
+          }
+        } catch (error) {
+          console.warn("Détection par segments échouée", error);
+        } finally {
+          deleteMat(gray);
+          deleteMat(blurred);
+          deleteMat(edges);
+          deleteMat(lines);
+        }
+      }
+
+      function collectQuadCandidates(contours, imageArea, label, methodWeight, candidates) {
+        if (!contours || contours.size() === 0) return;
 
         const minArea = imageArea * 0.012;
         const maxArea = imageArea * 0.96;
-        let best = null;
-        let bestScore = 0;
 
         for (let i = 0; i < contours.size(); i += 1) {
           const contour = contours.get(i);
@@ -1474,26 +1968,25 @@
 
             if (approx.rows === 4) {
               points = pointsFromApprox(approx);
-              score = area * rectangularityScore(points, imageArea);
+              score = rectangularityScore(points, imageArea);
             } else if (area > imageArea * 0.04) {
               points = cv.RotatedRect.points(cv.minAreaRect(contour));
-              score = area * 0.72;
+              score = 0.72;
             }
 
-            if (points && score > bestScore) {
-              best = orderCorners(points).map((point) => ({
-                x: point.x / scale,
-                y: point.y / scale
-              }));
-              bestScore = score;
+            if (points && score > 0.22) {
+              candidates.push({
+                points: orderCorners(points),
+                label,
+                methodWeight,
+                contourScore: score
+              });
             }
           } finally {
             deleteMat(approx);
             deleteMat(contour);
           }
         }
-
-        return best;
       }
 
       function pointsFromApprox(approx) {
@@ -1517,8 +2010,256 @@
         ];
         const shortest = Math.min(...sides);
         const longest = Math.max(...sides);
-        if (shortest < Math.sqrt(imageArea) * 0.08 || longest / shortest > 5.5) return 0.2;
-        return clamp(shortest / longest, 0.35, 1);
+        const area = polygonArea(ordered);
+        const areaRatio = area / imageArea;
+        if (shortest < Math.sqrt(imageArea) * 0.08 || longest / shortest > 4.3 || areaRatio < 0.015 || areaRatio > 0.96) return 0.1;
+        const aspectScore = clamp(1 - Math.max(0, longest / shortest - 2.35) / 1.95, 0.25, 1);
+        const areaScore = clamp(areaRatio / 0.16, 0.35, 1);
+        return aspectScore * 0.55 + areaScore * 0.45;
+      }
+
+      function chooseFrameCandidate(src, candidates) {
+        if (!candidates.length) return null;
+
+        const unique = [];
+        for (const candidate of candidates) {
+          const ordered = orderCorners(candidate.points);
+          if (!isValidQuad(ordered, src.cols, src.rows)) continue;
+          const duplicate = unique.some((item) => averageCornerDistance(item.points, ordered) < Math.min(src.cols, src.rows) * 0.025);
+          if (!duplicate) unique.push({ ...candidate, points: ordered });
+        }
+
+        let best = null;
+        for (const candidate of unique) {
+          const geometry = geometryScore(candidate.points, src.cols, src.rows);
+          const band = frameBandScore(src, candidate.points);
+          const confidence = clamp(
+            (geometry * 0.34 + band * 0.46 + (candidate.contourScore || 0.62) * 0.12 + candidate.methodWeight * 0.08),
+            0,
+            1
+          );
+
+          if (!best || confidence > best.confidence) {
+            best = { ...candidate, confidence };
+          }
+        }
+
+        return best;
+      }
+
+      function isValidQuad(points, width, height) {
+        const area = polygonArea(points);
+        if (area < width * height * 0.015 || area > width * height * 0.97) return false;
+        const sides = [
+          distance(points[0], points[1]),
+          distance(points[1], points[2]),
+          distance(points[2], points[3]),
+          distance(points[3], points[0])
+        ];
+        const shortest = Math.min(...sides);
+        const longest = Math.max(...sides);
+        return shortest > Math.min(width, height) * 0.08 && longest / shortest < 4.5;
+      }
+
+      function geometryScore(points, width, height) {
+        const areaRatio = polygonArea(points) / (width * height);
+        const sides = [
+          distance(points[0], points[1]),
+          distance(points[1], points[2]),
+          distance(points[2], points[3]),
+          distance(points[3], points[0])
+        ];
+        const shortest = Math.min(...sides);
+        const longest = Math.max(...sides);
+        const aspect = longest / shortest;
+        const areaScore = clamp((areaRatio - 0.015) / 0.28, 0.25, 1);
+        const aspectScore = clamp(1 - Math.max(0, aspect - 2.4) / 2.1, 0.25, 1);
+        const margin = Math.min(...points.map((point) => Math.min(point.x, point.y, width - point.x, height - point.y)));
+        const marginScore = margin < -6 ? 0.45 : 1;
+        return clamp(areaScore * 0.45 + aspectScore * 0.45 + marginScore * 0.1, 0, 1);
+      }
+
+      function frameBandScore(src, points) {
+        const sides = [
+          [points[0], points[1]],
+          [points[1], points[2]],
+          [points[2], points[3]],
+          [points[3], points[0]]
+        ];
+        const sideScores = sides.map(([a, b]) => scoreFrameSide(src, a, b));
+        sideScores.sort((a, b) => b - a);
+        const kept = sideScores.slice(0, 3);
+        return kept.reduce((sum, value) => sum + value, 0) / kept.length;
+      }
+
+      function scoreFrameSide(src, a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const length = Math.hypot(dx, dy);
+        if (length < 1) return 0;
+
+        const nx = -dy / length;
+        const ny = dx / length;
+        const band = clamp(Math.min(src.cols, src.rows) * 0.055, 14, 48);
+        const samples = [];
+
+        for (let i = 1; i <= 18; i += 1) {
+          const t = i / 19;
+          const x = a.x + dx * t;
+          const y = a.y + dy * t;
+          const sample = scoreNormalProfile(src, x, y, nx, ny, band);
+          if (sample !== null) samples.push(sample);
+        }
+
+        if (!samples.length) return 0;
+        samples.sort((x, y) => y - x);
+        const kept = samples.slice(0, Math.max(4, Math.ceil(samples.length * 0.68)));
+        return kept.reduce((sum, value) => sum + value, 0) / kept.length;
+      }
+
+      function scoreNormalProfile(src, x, y, nx, ny, band) {
+        const offsets = [-0.45, -0.08, 0.18, 0.38, 0.6, 0.82, 1.06].map((value) => value * band);
+        const profile = [];
+
+        for (const offset of offsets) {
+          const pixel = samplePixel(src, x + nx * offset, y + ny * offset);
+          if (!pixel) return null;
+          profile.push(pixel);
+        }
+
+        const transitions = [];
+        for (let i = 1; i < profile.length; i += 1) {
+          transitions.push(
+            Math.abs(profile[i].luma - profile[i - 1].luma) / 255 +
+            Math.abs(profile[i].sat - profile[i - 1].sat) / 255
+          );
+        }
+        transitions.sort((a, b) => b - a);
+        const transitionScore = clamp((transitions[0] + transitions[1] - 0.18) / 0.72, 0, 1);
+
+        const middle = profile.slice(2, 5);
+        const side = [profile[1], profile[5]];
+        const brightMiddle = Math.max(...middle.map((item) => item.luma));
+        const sideLuma = side.reduce((sum, item) => sum + item.luma, 0) / side.length;
+        const middleSat = middle.reduce((sum, item) => sum + item.sat, 0) / middle.length;
+        const sideSat = side.reduce((sum, item) => sum + item.sat, 0) / side.length;
+        const whiteLineScore = clamp(((brightMiddle - sideLuma) / 70 + (sideSat - middleSat) / 90) / 2, 0, 1);
+        const coloredSideScore = clamp(sideSat / 95, 0, 1);
+
+        return transitionScore * 0.5 + whiteLineScore * 0.32 + coloredSideScore * 0.18;
+      }
+
+      function samplePixel(src, x, y) {
+        const px = Math.round(x);
+        const py = Math.round(y);
+        if (px < 0 || py < 0 || px >= src.cols || py >= src.rows) return null;
+        const index = (py * src.cols + px) * src.channels();
+        const r = src.data[index];
+        const g = src.data[index + 1];
+        const b = src.data[index + 2];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        return {
+          luma: 0.2126 * r + 0.7152 * g + 0.0722 * b,
+          sat: max === 0 ? 0 : ((max - min) / max) * 255
+        };
+      }
+
+      function dominantLineGroups(segments) {
+        if (segments.length < 4) return [];
+        const bins = new Array(18).fill(0).map((_, index) => ({ index, weight: 0, segments: [] }));
+        for (const segment of segments) {
+          const index = Math.min(17, Math.floor(segment.angle / Math.PI * 18));
+          bins[index].weight += segment.length;
+          bins[index].segments.push(segment);
+        }
+        return bins
+          .filter((bin) => bin.segments.length >= 2)
+          .sort((a, b) => b.weight - a.weight)
+          .slice(0, 4)
+          .map((bin) => ({
+            angle: ((bin.index + 0.5) / 18) * Math.PI,
+            segments: bin.segments
+          }));
+      }
+
+      function quadFromLineGroups(groupA, groupB, width, height) {
+        const pairA = extremeLinesFromSegments(groupA);
+        const pairB = extremeLinesFromSegments(groupB);
+        if (!pairA || !pairB) return null;
+
+        const points = [
+          lineIntersection(pairA.low, pairB.low),
+          lineIntersection(pairA.high, pairB.low),
+          lineIntersection(pairA.high, pairB.high),
+          lineIntersection(pairA.low, pairB.high)
+        ];
+
+        if (points.some((point) => !point)) return null;
+        const relaxedBounds = Math.max(width, height) * 0.12;
+        if (points.some((point) => point.x < -relaxedBounds || point.y < -relaxedBounds || point.x > width + relaxedBounds || point.y > height + relaxedBounds)) return null;
+        return points;
+      }
+
+      function extremeLinesFromSegments(segments) {
+        if (segments.length < 2) return null;
+        const lines = segments.map((segment) => {
+          const line = lineFromPoints({ x: segment.x1, y: segment.y1 }, { x: segment.x2, y: segment.y2 });
+          return {
+            ...line,
+            length: segment.length,
+            projection: line.a * ((segment.x1 + segment.x2) / 2) + line.b * ((segment.y1 + segment.y2) / 2)
+          };
+        }).sort((a, b) => a.projection - b.projection);
+
+        const lowGroup = lines.slice(0, Math.max(1, Math.ceil(lines.length * 0.25)));
+        const highGroup = lines.slice(Math.max(0, Math.floor(lines.length * 0.75)));
+        const low = longestLine(lowGroup);
+        const high = longestLine(highGroup);
+        if (!low || !high || Math.abs(high.projection - low.projection) < 24) return null;
+        return { low, high };
+      }
+
+      function lineFromPoints(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const length = Math.hypot(dx, dy) || 1;
+        const lineA = dy / length;
+        const lineB = -dx / length;
+        return {
+          a: lineA,
+          b: lineB,
+          c: -(lineA * a.x + lineB * a.y)
+        };
+      }
+
+      function lineIntersection(line1, line2) {
+        const det = line1.a * line2.b - line2.a * line1.b;
+        if (Math.abs(det) < 0.0001) return null;
+        return {
+          x: (line1.b * line2.c - line2.b * line1.c) / det,
+          y: (line2.a * line1.c - line1.a * line2.c) / det
+        };
+      }
+
+      function longestLine(lines) {
+        return lines.reduce((best, line) => (!best || line.length > best.length ? line : best), null);
+      }
+
+      function averageCornerDistance(a, b) {
+        const orderedA = orderCorners(a);
+        const orderedB = orderCorners(b);
+        return orderedA.reduce((sum, point, index) => sum + distance(point, orderedB[index]), 0) / 4;
+      }
+
+      function polygonArea(points) {
+        let area = 0;
+        for (let i = 0; i < points.length; i += 1) {
+          const current = points[i];
+          const next = points[(i + 1) % points.length];
+          area += current.x * next.y - next.x * current.y;
+        }
+        return Math.abs(area) / 2;
       }
 
       function orderCorners(points) {
