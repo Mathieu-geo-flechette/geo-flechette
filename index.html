@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -666,12 +667,14 @@
     }
   </style>
 </head>
+
 <body>
   <header class="app-header">
     <div class="title-block">
       <p class="eyebrow">Geo Fléchette</p>
       <h1>Carte, impact, destination.</h1>
-      <p class="subtitle">Choisissez la cible, chargez la photo, puis touchez l’impact sur la carte recadrée. L’app s’occupe du reste.</p>
+      <p class="subtitle">Choisissez la cible, chargez la photo, puis touchez l’impact sur la carte recadrée. L’app
+        s’occupe du reste.</p>
     </div>
     <div id="engineState" class="engine-pill">Analyse en veille</div>
   </header>
@@ -692,7 +695,8 @@
     <section class="control-panel step-card" aria-live="polite">
       <span class="step-kicker">Étape en cours</span>
       <h2 id="stepTitle">Choisir une photo</h2>
-      <p id="stepText">Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.</p>
+      <p id="stepText">Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre
+        les quatre coins à la main.</p>
     </section>
 
     <section class="workspace" aria-label="Analyse de la cible">
@@ -865,7 +869,7 @@
         setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         bindEvents();
         syncControls();
-        loadDatabase("france").catch(() => {});
+        loadDatabase("france").catch(() => { });
         warmOpenCv();
       }
 
@@ -936,7 +940,7 @@
         state.runSerial += 1;
         renderOptions();
         setStatus("Carte modifiée", map === "france" ? "Mode France actif." : "Mode Lyon actif.", "info");
-        loadDatabase(map).catch(() => {});
+        loadDatabase(map).catch(() => { });
 
         if (state.targetReady) {
           state.clickPoint = null;
@@ -1327,6 +1331,25 @@
       }
 
       function targetDimensions(corners) {
+
+        const zone = CONFIG.zones[state.currentMap];
+
+        // Rapport largeur / hauteur de la carte GPS
+        const gpsWidth = zone.lonMax - zone.lonMin;
+        const gpsHeight = zone.latMax - zone.latMin;
+        const gpsRatio = gpsWidth / gpsHeight;
+
+        // On conserve une bonne résolution
+        const width = 1400;
+        const height = Math.round(width / gpsRatio);
+
+        return {
+          width,
+          height
+        };
+      }
+
+      /*function targetDimensions(corners) {
         const top = distance(corners[0], corners[1]);
         const right = distance(corners[1], corners[2]);
         const bottom = distance(corners[2], corners[3]);
@@ -1338,7 +1361,7 @@
         width = clamp(Math.round(width * scale), 240, maxSide);
         height = clamp(Math.round(height * scale), 240, maxSide);
         return { width, height };
-      }
+      }*/
 
       function startManualCorners(title = "Reprendre les coins", text = "Touchez les quatre coins du cadre sur la photo originale.", force = false) {
         if (!state.imageReady || (state.busy && !force)) return;
@@ -2913,7 +2936,7 @@
       }
 
       function warmOpenCv() {
-        const start = () => ensureOpenCv().catch(() => {});
+        const start = () => ensureOpenCv().catch(() => { });
         if ("requestIdleCallback" in window) {
           window.requestIdleCallback(start, { timeout: 1800 });
         } else {
@@ -3105,4 +3128,5 @@
     })();
   </script>
 </body>
+
 </html>
