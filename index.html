@@ -337,7 +337,7 @@
 
     .canvas-shell {
       position: relative;
-      min-height: 320px;
+      min-height: 0;
       background:
         linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
         linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
@@ -348,11 +348,14 @@
       background-size: 24px 24px;
     }
 
+    .canvas-shell.is-empty {
+      min-height: 320px;
+    }
+
     canvas {
       display: block;
       width: 100%;
       height: auto;
-      max-height: 72vh;
       touch-action: pan-y;
     }
 
@@ -509,14 +512,17 @@
     }
 
     .work-card .canvas-shell {
+      display: block;
+    }
+
+    .work-card .canvas-shell.is-empty {
       min-height: 420px;
       display: grid;
       place-items: center;
     }
 
     .work-card canvas {
-      max-height: min(72vh, 760px);
-      object-fit: contain;
+      object-fit: fill;
     }
 
     .upload-empty {
@@ -695,7 +701,7 @@
           <h2 id="workTitle" class="panel-title">Zone de jeu</h2>
           <span id="photoMeta" class="meta">Aucune image</span>
         </div>
-        <div class="canvas-shell">
+        <div id="canvasShell" class="canvas-shell is-empty">
           <canvas id="canvas" width="960" height="640" aria-label="Photo de la cible"></canvas>
           <div id="photoEmpty" class="empty-state">
             <div class="upload-empty">
@@ -758,6 +764,7 @@
 
       const els = {
         canvas: document.getElementById("canvas"),
+        canvasShell: document.getElementById("canvasShell"),
         fileInput: document.getElementById("fileInput"),
         fileMeta: document.getElementById("fileMeta"),
         photoMeta: document.getElementById("photoMeta"),
@@ -781,6 +788,46 @@
       const ctx = els.canvas.getContext("2d", { alpha: false });
       const numberFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
       const CORNER_LABELS = ["Haut gauche", "Haut droit", "Bas droit", "Bas gauche"];
+      const ARUCO_FRAME_ROLES = [
+        { id: 0, role: "topLeft" },
+        { id: 10, role: "topRight" },
+        { id: 20, role: "bottomRight" },
+        { id: 30, role: "bottomLeft" }
+      ];
+      const ARUCO_MARKER_PATTERNS = new Map([
+        [0, [
+          [0, 0, 0, 0, 0, 0],
+          [0, 1, 0, 1, 1, 0],
+          [0, 0, 1, 0, 1, 0],
+          [0, 0, 0, 1, 1, 0],
+          [0, 0, 0, 1, 0, 0],
+          [0, 0, 0, 0, 0, 0]
+        ]],
+        [10, [
+          [0, 0, 0, 0, 0, 0],
+          [0, 1, 1, 1, 1, 0],
+          [0, 1, 0, 0, 1, 0],
+          [0, 1, 0, 0, 1, 0],
+          [0, 0, 0, 0, 1, 0],
+          [0, 0, 0, 0, 0, 0]
+        ]],
+        [20, [
+          [0, 0, 0, 0, 0, 0],
+          [0, 1, 0, 0, 0, 0],
+          [0, 0, 1, 1, 0, 0],
+          [0, 1, 0, 0, 0, 0],
+          [0, 1, 0, 1, 1, 0],
+          [0, 0, 0, 0, 0, 0]
+        ]],
+        [30, [
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 1, 0, 0, 0],
+          [0, 0, 1, 0, 0, 0],
+          [0, 0, 0, 0, 1, 0],
+          [0, 0, 1, 0, 1, 0],
+          [0, 0, 0, 0, 0, 0]
+        ]]
+      ]);
 
       const state = {
         currentMap: "france",
@@ -1006,6 +1053,7 @@
 
           drawOriginalPhoto();
           els.photoEmpty.classList.add("is-hidden");
+          setCanvasShellEmpty(false);
           els.fileMeta.textContent = `${state.imageName} - ${Math.round(file.size / 1024)} Ko`;
           els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
           setStatus("Cadre en recherche", "La cible est analysée avant recadrage.", "warning");
@@ -1018,6 +1066,7 @@
           state.stage = "empty";
           clearCanvas(ctx, els.canvas);
           els.photoEmpty.classList.remove("is-hidden");
+          setCanvasShellEmpty(true);
           showMessage("error", "Image illisible", userImageError(error));
           setStatus("Image illisible", "Essayez une autre photo ou exportez-la en JPEG.", "error");
           setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
@@ -1122,6 +1171,7 @@
         const sourceCanvas = buildPhotoCanvas();
         els.canvas.width = sourceCanvas.width;
         els.canvas.height = sourceCanvas.height;
+        setCanvasShellEmpty(false);
         ctx.drawImage(sourceCanvas, 0, 0);
         els.workTitle.textContent = state.stage === "manualCorners" ? "Photo originale" : "Photo chargée";
         els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
@@ -1140,6 +1190,7 @@
 
         els.canvas.width = state.targetCanvas.width;
         els.canvas.height = state.targetCanvas.height;
+        setCanvasShellEmpty(false);
         ctx.drawImage(state.targetCanvas, 0, 0);
         els.workTitle.textContent = "Cible recadrée";
         els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
@@ -1154,6 +1205,10 @@
         context.fillRect(0, 0, canvas.width, canvas.height);
       }
 
+      function setCanvasShellEmpty(isEmpty) {
+        els.canvasShell.classList.toggle("is-empty", isEmpty);
+      }
+
       function clearWorkspaceState() {
         state.frameCorners = null;
         state.frameConfidence = null;
@@ -1166,6 +1221,10 @@
         renderCornerHelp();
       }
 
+
+      /* --------------
+        Detcet simple
+      -----------------*/
       async function detectAndPrepareTarget(serial) {
         let src = null;
 
@@ -1175,7 +1234,13 @@
 
           const sourceCanvas = buildPhotoCanvas();
           src = cv.imread(sourceCanvas);
-          const detection = detectFrameCorners(src);
+
+          // Ordre volontaire : on tente d'abord les 4 marqueurs ArUco.
+          // La détection du cadre classique ne prend le relais que si les marqueurs échouent.
+          let detection = detectArucoFrameCorners(src);
+          if (!detection || !detection.corners) {
+            detection = detectFrameCorners(src);
+          }
 
           if (!detection || !detection.corners) {
             startManualCorners(
@@ -1412,6 +1477,7 @@
         els.workTitle.textContent = "Zone de jeu";
         clearCanvas(ctx, els.canvas);
         els.photoEmpty.classList.remove("is-hidden");
+        setCanvasShellEmpty(true);
         showMessage("info", "Nouvelle partie", "Chargez une photo de la cible pour commencer.");
         setStatus("Prêt", "Chargez une photo pour commencer.", "info");
         setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
@@ -1747,6 +1813,381 @@
         context.fillStyle = "#ffd166";
         context.fillText(label, labelX, labelY, maxWidth);
         context.restore();
+      }
+
+      /*-------------
+        Detect corner
+      --------------*/
+      function detectArucoFrameCorners(src) {
+        const maxSide = Math.max(src.cols, src.rows);
+        const scale = Math.min(1, CONFIG.detectionMaxSide / maxSide);
+        let work = null;
+
+        try {
+          if (scale < 1) {
+            work = new cv.Mat();
+            cv.resize(src, work, new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale)), 0, 0, cv.INTER_AREA);
+          } else {
+            work = src.clone();
+          }
+
+          const markers = detectArucoMarkers(work);
+          if (markers.length < 4) return null;
+
+          // Les IDs valident que ce sont les bons marqueurs, mais la géométrie
+          // finale privilégie leur position réelle dans la photo.
+          const byId = bestArucoMarkersById(markers);
+          const byPosition = buildArucoFrameFromPositions(byId, work.cols, work.rows);
+          const byRole = buildArucoFrameFromRoles(byId, work.cols, work.rows);
+          const frame = byPosition || byRole;
+          if (!frame) return null;
+
+          return {
+            corners: frame.points.map((point) => ({
+              x: point.x / scale,
+              y: point.y / scale
+            })),
+            confidence: frame.confidence,
+            label: frame.label
+          };
+        } catch (error) {
+          console.warn("Détection ArUco échouée", error);
+          return null;
+        } finally {
+          deleteMat(work);
+        }
+      }
+
+      function detectArucoMarkers(src) {
+        const markers = [];
+        let gray = null;
+        let blurred = null;
+        let darkMask = null;
+        let adaptiveMask = null;
+        let otsuMask = null;
+
+        try {
+          gray = new cv.Mat();
+          blurred = new cv.Mat();
+          darkMask = new cv.Mat();
+          adaptiveMask = new cv.Mat();
+          otsuMask = new cv.Mat();
+
+          cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+          cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
+
+          // Plusieurs masques donnent plus de chances de séparer les marqueurs
+          // d'une cible colorée, de textes noirs ou d'illustrations voisines.
+          cv.threshold(blurred, darkMask, 72, 255, cv.THRESH_BINARY_INV);
+          cv.adaptiveThreshold(blurred, adaptiveMask, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 35, 5);
+          cv.threshold(blurred, otsuMask, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+
+          // L'ouverture casse les petites connexions avec le fond imprimé.
+          // La fermeture répare ensuite les bords noirs du marqueur.
+          collectArucoMarkersFromMask(src, darkMask, markers, { openSize: 7, closeSize: 3 });
+          collectArucoMarkersFromMask(src, adaptiveMask, markers, { openSize: 5, closeSize: 3 });
+          collectArucoMarkersFromMask(src, otsuMask, markers, { openSize: 5, closeSize: 3 });
+          return dedupeArucoMarkers(markers);
+        } finally {
+          deleteMat(gray);
+          deleteMat(blurred);
+          deleteMat(darkMask);
+          deleteMat(adaptiveMask);
+          deleteMat(otsuMask);
+        }
+      }
+
+      function collectArucoMarkersFromMask(src, mask, markers, options = {}) {
+        let cleaned = null;
+        let openKernel = null;
+        let closeKernel = null;
+        let contours = null;
+        let hierarchy = null;
+
+        try {
+          cleaned = mask.clone();
+          if (options.openSize) {
+            openKernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(options.openSize, options.openSize));
+            cv.morphologyEx(cleaned, cleaned, cv.MORPH_OPEN, openKernel);
+          }
+          if (options.closeSize) {
+            closeKernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(options.closeSize, options.closeSize));
+            cv.morphologyEx(cleaned, cleaned, cv.MORPH_CLOSE, closeKernel);
+          }
+
+          contours = new cv.MatVector();
+          hierarchy = new cv.Mat();
+          cv.findContours(cleaned, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+          const imageArea = src.cols * src.rows;
+          for (let i = 0; i < contours.size(); i += 1) {
+            const contour = contours.get(i);
+            let approx = null;
+
+            try {
+              // Un marqueur attendu est un quadrilatère noir assez grand,
+              // mais jamais de la taille du cadre complet de la cible.
+              const area = cv.contourArea(contour);
+              if (area < imageArea * 0.00018 || area > imageArea * 0.13) continue;
+
+              const peri = cv.arcLength(contour, true);
+              approx = new cv.Mat();
+              cv.approxPolyDP(contour, approx, Math.max(3, 0.035 * peri), true);
+              if (approx.rows !== 4) continue;
+
+              const points = orderCorners(pointsFromApprox(approx));
+              if (!isPlausibleArucoQuad(points, src.cols, src.rows)) continue;
+
+              // Chaque quadrilatère plausible est redressé puis comparé aux
+              // quatre motifs 4x4 connus, avec rotation et petite tolérance.
+              const marker = decodeArucoCandidate(src, points, area);
+              if (marker) markers.push(marker);
+            } finally {
+              deleteMat(approx);
+              deleteMat(contour);
+            }
+          }
+        } finally {
+          deleteMat(cleaned);
+          deleteMat(openKernel);
+          deleteMat(closeKernel);
+          deleteMat(contours);
+          deleteMat(hierarchy);
+        }
+      }
+
+      function isPlausibleArucoQuad(points, width, height) {
+        const area = polygonArea(points);
+        const imageArea = width * height;
+        if (area < imageArea * 0.00018 || area > imageArea * 0.13) return false;
+
+        const sides = [
+          distance(points[0], points[1]),
+          distance(points[1], points[2]),
+          distance(points[2], points[3]),
+          distance(points[3], points[0])
+        ];
+        const shortest = Math.min(...sides);
+        const longest = Math.max(...sides);
+        return shortest > Math.min(width, height) * 0.018 && longest / shortest < 3.2;
+      }
+
+      function decodeArucoCandidate(src, points, area) {
+        const markerSize = 90;
+        let srcPts = null;
+        let dstPts = null;
+        let homography = null;
+        let warped = null;
+        let gray = null;
+
+        try {
+          srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            points[0].x, points[0].y,
+            points[1].x, points[1].y,
+            points[2].x, points[2].y,
+            points[3].x, points[3].y
+          ]);
+          dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            0, 0,
+            markerSize, 0,
+            markerSize, markerSize,
+            0, markerSize
+          ]);
+
+          homography = cv.getPerspectiveTransform(srcPts, dstPts);
+          warped = new cv.Mat();
+          gray = new cv.Mat();
+          cv.warpPerspective(src, warped, homography, new cv.Size(markerSize, markerSize), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+          cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
+
+          // Le marqueur imprimé fait 6x6 cellules : bord noir inclus,
+          // coeur 4x4 utile au centre.
+          const matrix = sampleArucoMatrix(gray, 6);
+          if (!matrix) return null;
+
+          const match = matchArucoPattern(matrix);
+          if (!match) return null;
+
+          return {
+            id: match.id,
+            rotation: match.rotation,
+            score: match.score,
+            mismatch: match.mismatch,
+            area,
+            corners: points,
+            center: centroid(points)
+          };
+        } finally {
+          deleteMat(srcPts);
+          deleteMat(dstPts);
+          deleteMat(homography);
+          deleteMat(warped);
+          deleteMat(gray);
+        }
+      }
+
+      function sampleArucoMatrix(gray, cells) {
+        const cellWidth = gray.cols / cells;
+        const cellHeight = gray.rows / cells;
+        const means = [];
+
+        for (let y = 0; y < cells; y += 1) {
+          const row = [];
+          for (let x = 0; x < cells; x += 1) {
+            row.push(sampleGrayCell(gray, x * cellWidth, y * cellHeight, cellWidth, cellHeight));
+          }
+          means.push(row);
+        }
+
+        const values = means.flat();
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        if (max - min < 28) return null;
+
+        const threshold = (min + max) / 2;
+        return means.map((row) => row.map((value) => (value > threshold ? 1 : 0)));
+      }
+
+      function sampleGrayCell(gray, x, y, width, height) {
+        const left = Math.max(0, Math.round(x + width * 0.28));
+        const right = Math.min(gray.cols - 1, Math.round(x + width * 0.72));
+        const top = Math.max(0, Math.round(y + height * 0.28));
+        const bottom = Math.min(gray.rows - 1, Math.round(y + height * 0.72));
+        let sum = 0;
+        let count = 0;
+
+        for (let py = top; py <= bottom; py += 1) {
+          const rowOffset = py * gray.cols;
+          for (let px = left; px <= right; px += 1) {
+            sum += gray.data[rowOffset + px];
+            count += 1;
+          }
+        }
+
+        return count ? sum / count : 0;
+      }
+
+      function matchArucoPattern(matrix) {
+        let best = null;
+
+        // On compare toutes les rotations pour accepter un marqueur posé
+        // dans n'importe quel sens sur le coin de la cible.
+        for (const [id, pattern] of ARUCO_MARKER_PATTERNS) {
+          for (let rotation = 0; rotation < 4; rotation += 1) {
+            const rotated = rotateMatrix(matrix, rotation);
+            const mismatch = hammingDistance(rotated, pattern);
+            const score = 1 - mismatch / 36;
+            if (!best || mismatch < best.mismatch) {
+              best = { id, rotation, mismatch, score };
+            }
+          }
+        }
+
+        return best && best.mismatch <= 5 ? best : null;
+      }
+
+      function rotateMatrix(matrix, turns) {
+        let rotated = matrix;
+        for (let turn = 0; turn < turns; turn += 1) {
+          rotated = rotated[0].map((_, x) => rotated.map((row) => row[x]).reverse());
+        }
+        return rotated;
+      }
+
+      function hammingDistance(a, b) {
+        let distanceValue = 0;
+        for (let y = 0; y < a.length; y += 1) {
+          for (let x = 0; x < a[y].length; x += 1) {
+            if (a[y][x] !== b[y][x]) distanceValue += 1;
+          }
+        }
+        return distanceValue;
+      }
+
+      function dedupeArucoMarkers(markers) {
+        const sorted = markers.slice().sort((a, b) => b.score - a.score || b.area - a.area);
+        const unique = [];
+
+        for (const marker of sorted) {
+          const duplicate = unique.some((item) => distance(item.center, marker.center) < Math.sqrt(Math.max(item.area, marker.area)) * 0.36);
+          if (!duplicate) unique.push(marker);
+        }
+
+        return unique;
+      }
+
+      function bestArucoMarkersById(markers) {
+        const expectedIds = new Set(ARUCO_FRAME_ROLES.map((item) => item.id));
+        const byId = new Map();
+
+        for (const marker of markers) {
+          if (!expectedIds.has(marker.id)) continue;
+          const previous = byId.get(marker.id);
+          if (!previous || marker.score > previous.score || (marker.score === previous.score && marker.area > previous.area)) {
+            byId.set(marker.id, marker);
+          }
+        }
+
+        return byId;
+      }
+
+      function buildArucoFrameFromRoles(byId, width, height) {
+        const markers = [];
+        const points = [];
+
+        for (const item of ARUCO_FRAME_ROLES) {
+          const marker = byId.get(item.id);
+          if (!marker) return null;
+          markers.push(marker);
+          points.push(selectArucoFrameCorner(marker, item.role));
+        }
+
+        return buildArucoFrameResult(points, markers, width, height, "ArUco 4x4");
+      }
+
+      function buildArucoFrameFromPositions(byId, width, height) {
+        const markers = Array.from(byId.values());
+        if (markers.length < 4) return null;
+
+        // Le placement physique des IDs peut changer : on ordonne donc les
+        // centres détectés pour reconstruire haut-gauche, haut-droite, etc.
+        const centerRefs = markers.map((marker, index) => ({
+          x: marker.center.x,
+          y: marker.center.y,
+          index
+        }));
+        const orderedCenters = orderCorners(centerRefs);
+        const roles = ["topLeft", "topRight", "bottomRight", "bottomLeft"];
+        const points = orderedCenters.map((center, index) => selectArucoFrameCorner(markers[center.index], roles[index]));
+        const orderedMarkers = orderedCenters.map((center) => markers[center.index]);
+
+        return buildArucoFrameResult(points, orderedMarkers, width, height, "ArUco 4x4 positions");
+      }
+
+      function buildArucoFrameResult(points, markers, width, height, label) {
+        const ordered = orderCorners(points);
+        if (!isValidQuad(ordered, width, height)) return null;
+
+        const averageScore = markers.reduce((sum, marker) => sum + marker.score, 0) / markers.length;
+        const confidence = clamp(averageScore * 0.72 + geometryScore(ordered, width, height) * 0.28, 0, 1);
+        if (confidence < 0.64) return null;
+
+        return { points: ordered, confidence, label };
+      }
+
+      function selectArucoFrameCorner(marker, role) {
+        const corners = orderCorners(marker.corners);
+        if (role === "topLeft") return corners[0];
+        if (role === "topRight") return corners[1];
+        if (role === "bottomRight") return corners[2];
+        return corners[3];
+      }
+
+      function centroid(points) {
+        return points.reduce(
+          (sum, point) => ({ x: sum.x + point.x / points.length, y: sum.y + point.y / points.length }),
+          { x: 0, y: 0 }
+        );
       }
 
       function detectFrameCorners(src) {
