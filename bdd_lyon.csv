@@ -1,30 +1,32 @@
-nom;lat;lon;type;maps
-Bistrot La Varenne;45.7533257;4.8328884; bar;https://maps.app.goo.gl/E4Cw93mQ4mbZNZgRA;
-Le Sucre;45.7458;4.8183;bar;https://www.google.com/maps?q=45.7458,4.8183
-Ninkasi Guillotière;45.7531;4.8421;bar;https://www.google.com/maps?q=45.7531,4.8421
-Ayers Rock Boat;45.7585;4.8190;bar;https://www.google.com/maps?q=45.7585,4.8190
-Monkey Club;45.7647;4.8358;bar;https://www.google.com/maps?q=45.7647,4.8358
-L'Officine;45.7634;4.8342;bar;https://www.google.com/maps?q=45.7634,4.8342
-La Maison M;45.7710;4.8320;bar;https://www.google.com/maps?q=45.7710,4.8320
-Flair;45.7582;4.8349;bar;https://www.google.com/maps?q=45.7582,4.8349
-Contrary;45.7614;4.8351;bar;https://www.google.com/maps?q=45.7614,4.8351
-Les Halles de Lyon Paul Bocuse;45.7579;4.8414;resto;https://www.google.com/maps?q=45.7579,4.8414
-Café Comptoir Abel;45.7545;4.8252;resto;https://www.google.com/maps?q=45.7545,4.8252
-Daniel et Denise;45.7685;4.8348;resto;https://www.google.com/maps?q=45.7685,4.8348
-Le Bouchon des Filles;45.7665;4.8288;resto;https://www.google.com/maps?q=45.7665,4.8288
-Les Lyonnais;45.7623;4.8278;resto;https://www.google.com/maps?q=45.7623,4.8278
-Brasserie Georges;45.7480;4.8285;resto;https://www.google.com/maps?q=45.7480,4.8285
-Le Poêlon d'Or;45.7649;4.8323;resto;https://www.google.com/maps?q=45.7649,4.8323
-Chez Paul;45.7720;4.8275;resto;https://www.google.com/maps?q=45.7720,4.8275
-Les Apothicaires;45.7454;4.8424;resto;https://www.google.com/maps?q=45.7454,4.8424
-Bulle;45.7575;4.8328;resto;https://www.google.com/maps?q=45.7575,4.8328
-Parc de la Tête d'Or;45.7797;4.8525;activite;https://www.google.com/maps?q=45.7797,4.8525
-Croix-Rousse balade;45.7740;4.8325;activite;https://www.google.com/maps?q=45.7740,4.8325
-Musée des Confluences;45.7338;4.8185;activite;https://www.google.com/maps?q=45.7338,4.8185
-Mini World Lyon;45.7815;4.9178;activite;https://www.google.com/maps?q=45.7815,4.9178
-Fourvière;45.7622;4.8224;activite;https://www.google.com/maps?q=45.7622,4.8224
-Vieux Lyon;45.7620;4.8272;activite;https://www.google.com/maps?q=45.7620,4.8272
-Berges du Rhône;45.7572;4.8428;activite;https://www.google.com/maps?q=45.7572,4.8428
-Parc de Gerland;45.7279;4.8267;activite;https://www.google.com/maps?q=45.7279,4.8267
-Escape Game John Doe;45.7618;4.8350;activite;https://www.google.com/maps?q=45.7618,4.8350
-UGC Ciné Cité Confluence;45.7422;4.8154;activite;https://www.google.com/maps?q=45.7422,4.8154
+Nom;Latitude;Longitude;Type;Maps;Commentaire
+Bistrot La Varenne;45.7532827;4.8329112;Bar;https://www.google.com/maps/place/Bistrot+La+Varenne/@45.7532827,4.8322675,19z/data=!3m1!5s0x47f4ea4ddfee37c9:0xeef6fef599ca26bf!4m6!3m5!1s0x47f4ea4de0805d13:0xe98f8678ff325e4c!8m2!3d45.7532827!4d4.8329112!16s%2Fg%2F11bwfm9fy5!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D;
+Durden;45.755872;4.8272567;Bar;https://www.google.com/maps/place/Durden/@45.755872,4.8246818,17z/data=!3m1!4b1!4m6!3m5!1s0x47f4ebad38a54a87:0x3928f814ff802e9!8m2!3d45.755872!4d4.8272567!16s%2Fg%2F11b7ys60my!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D;
+Le Sucre;45.7458;4.8183;Bar;https://www.google.com/maps?q=45.7458,4.8183;
+Ninkasi Guillotière;45.7531;4.8421;Bar;https://www.google.com/maps?q=45.7531,4.8421;
+Ayers Rock Boat;45.7585;4.8190;Bar;https://www.google.com/maps?q=45.7585,4.8190;
+Monkey Club;45.7647;4.8358;Bar;https://www.google.com/maps?q=45.7647,4.8358;
+L'Officine;45.7634;4.8342;Bar;https://www.google.com/maps?q=45.7634,4.8342;
+La Maison M;45.7710;4.8320;Bar;https://www.google.com/maps?q=45.7710,4.8320;
+Flair;45.7582;4.8349;Bar;https://www.google.com/maps?q=45.7582,4.8349;
+Contrary;45.7614;4.8351;Bar;https://www.google.com/maps?q=45.7614,4.8351;
+Les Halles de Lyon Paul Bocuse;45.7579;4.8414;Restaurant;https://www.google.com/maps?q=45.7579,4.8414;
+Cafz Comptoir Abel;45.7545;4.8252;Restaurant;https://www.google.com/maps?q=45.7545,4.8252;
+Daniel et Denise;45.7685;4.8348;Restaurant;https://www.google.com/maps?q=45.7685,4.8348;
+Le Bouchon des Filles;45.7665;4.8288;Restaurant;https://www.google.com/maps?q=45.7665,4.8288;
+Les Lyonnais;45.7623;4.8278;Restaurant;https://www.google.com/maps?q=45.7623,4.8278;
+Brasserie Georges;45.7480;4.8285;Restaurant;https://www.google.com/maps?q=45.7480,4.8285;
+Le Poêlon d'Or;45.7649;4.8323;Restaurant;https://www.google.com/maps?q=45.7649,4.8323;
+Chez Paul;45.7720;4.8275;Restaurant;https://www.google.com/maps?q=45.7720,4.8275;
+Les Apothicaires;45.7454;4.8424;Restaurant;https://www.google.com/maps?q=45.7454,4.8424;
+Bulle;45.7575;4.8328;Restaurant;https://www.google.com/maps?q=45.7575,4.8328;
+Parc de la T�te d'Or;45.7797;4.8525;Activite;https://www.google.com/maps?q=45.7797,4.8525;
+Croix-Rousse balade;45.7740;4.8325;Activite;https://www.google.com/maps?q=45.7740,4.8325;
+Musée des Confluences;45.7326472;4.8182403;Activite;https://www.google.com/maps/place/Mus�e+des+Confluences/@45.7429321,4.8165475,14.36z/data=!3m1!5s0x47f4ebd168fd568f:0x3be5b607403974e3!4m6!3m5!1s0x47f4eaeddd6c9055:0xae3e2900f5f2c337!8m2!3d45.7326472!4d4.8182403!16s%2Fm%2F064ltbr!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D;
+Mini World Lyon;45.7815;4.9178;Activite;https://www.google.com/maps?q=45.7815,4.9178;
+Vieux Lyon;45.7620;4.8272;Activite;https://www.google.com/maps?q=45.7620,4.8272;
+Berges du Rhône;45.7572;4.8428;Activite;https://www.google.com/maps?q=45.7572,4.8428;
+Parc de Gerland;45.7279;4.8267;Activite;https://www.google.com/maps?q=45.7279,4.8267;
+Escape Game John Doe;45.7618;4.8350;Activite;https://www.google.com/maps?q=45.7618,4.8350;
+Basilique Notre-Dame de Fourvi�re;45.7622698;4.822638;Activite;https://www.google.com/maps/place/Basilique+Notre-Dame+de+Fourvi%C3%A8re/@45.7626417,4.8170752,17z/data=!4m6!3m5!1s0x47f4eba97571522b:0x9d1bcc791b678e29!8m2!3d45.7622698!4d4.822638!16zL20vMGMybGZk!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D;Visite de la basilique et des toits
+Cap Confluent;45.742115;4.816081;Activite;https://www.google.com/maps/place/Cap+Confluent+location+de+bateaux+avec+et+sans+permis+%2F+Promenade+en+bateaux+%2F+Team+building/@45.7523523,4.8219444,14z/data=!4m6!3m5!1s0x47f4ebc88f3af823:0xe27f48296b9dda3d!8m2!3d45.742115!4d4.816081!16s%2Fg%2F11b7q0b7qk!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D;Cap Confluent location de bateaux avec et sans permis / Promenade en bateaux / Team building
+Parc Miribel Jonage;45.7984545;4.9411048;Activite;https://www.google.com/maps/place/Grand+Parc+Miribel+Jonage/@45.7644532,4.8395398,12.12z/data=!4m6!3m5!1s0x47f4bf5c4d1c3c9b:0x35fcce744437614c!8m2!3d45.7984545!4d4.9411048!16s%2Fg%2F1tdmjty1!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D;
