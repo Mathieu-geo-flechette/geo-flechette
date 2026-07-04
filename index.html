@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -120,9 +121,9 @@
     }
 
     .eyebrow {
-      margin: 0 0 4px;
+      margin: 0 0 6px;
       color: var(--accent);
-      font-size: 0.78rem;
+      font-size: 0.78 rem;
       font-weight: 800;
       letter-spacing: 0;
       text-transform: uppercase;
@@ -146,7 +147,7 @@
       max-width: 760px;
       margin-bottom: 0;
       color: var(--muted);
-      line-height: 1.45;
+      line-height: 1.2;
     }
 
     .engine-pill {
@@ -666,14 +667,14 @@
     }
   </style>
 </head>
+
 <body>
   <header class="app-header">
     <div class="title-block">
-      <p class="eyebrow">Geo Fléchette</p>
-      <h1>Carte, impact, destination.</h1>
-      <p class="subtitle">Choisissez la cible, chargez la photo, puis touchez l’impact sur la carte recadrée. L’app s’occupe du reste.</p>
+      <p class="eyebrow">🎯 Geo Fléchette 🎯</p>
+      <h1>Une cible, un impact, une destination !</h1>
     </div>
-    <div id="engineState" class="engine-pill">Analyse en veille</div>
+
   </header>
 
   <main class="app-shell">
@@ -689,16 +690,15 @@
       <section id="optionsPanel" class="control-group" aria-label="Options de résultat"></section>
     </section>
 
-    <section class="control-panel step-card" aria-live="polite">
-      <span class="step-kicker">Étape en cours</span>
-      <h2 id="stepTitle">Choisir une photo</h2>
-      <p id="stepText">Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.</p>
-    </section>
+
 
     <section class="workspace" aria-label="Analyse de la cible">
+      <span class="step-kicker">Étape en cours</span>
+
       <article class="canvas-panel work-card">
+
         <div class="panel-header">
-          <h2 id="workTitle" class="panel-title">Zone de jeu</h2>
+          <h2 id="workTitle" class="panel-title">Charger la cible</h2>
           <span id="photoMeta" class="meta">Aucune image</span>
         </div>
         <div id="canvasShell" class="canvas-shell is-empty">
@@ -715,21 +715,33 @@
         </div>
         <div id="cornerHelp" class="corner-help" hidden aria-label="Coins du cadre"></div>
       </article>
+
+      <section class="control-panel action-panel" aria-label="Actions">
+        <div class="actions">
+          <button id="manualFrameBtn" class="secondary-button" type="button" disabled>Reprendre les coins</button>
+          <button id="retryBtn" class="secondary-button" type="button" disabled>Reprendre l’impact</button>
+          <button id="resetBtn" class="danger-button" type="button" disabled>Nouvelle partie</button>
+        </div>
+      </section>
+
     </section>
 
-    <section class="control-panel action-panel" aria-label="Actions">
-      <div class="actions">
-        <button id="manualFrameBtn" class="secondary-button" type="button" disabled>Reprendre les coins</button>
-        <button id="retryBtn" class="secondary-button" type="button" disabled>Reprendre l’impact</button>
-        <button id="resetBtn" class="danger-button" type="button" disabled>Nouvelle partie</button>
-      </div>
+
+    <section id="output" class="result-panel" aria-live="polite"></section>
+
+    <section class="control-panel step-card" aria-live="polite">
+      <div id="engineState" class="engine-pill">Analyse en veille</div>
       <div id="statusBox" class="status-box" data-tone="info" role="status" aria-live="polite">
         <strong id="statusTitle">Prêt</strong>
         <span id="statusText" class="status-text">Chargez une photo pour commencer.</span>
       </div>
+      <span class="step-kicker">Étape en cours</span>
+      <h2 id="stepTitle">Choisir une photo</h2>
+      <p id="stepText">Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre
+        les quatre coins à la main.</p>
     </section>
 
-    <section id="output" class="result-panel" aria-live="polite"></section>
+
   </main>
 
   <script>
@@ -865,7 +877,7 @@
         setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         bindEvents();
         syncControls();
-        loadDatabase("france").catch(() => {});
+        loadDatabase("france").catch(() => { });
         warmOpenCv();
       }
 
@@ -936,7 +948,7 @@
         state.runSerial += 1;
         renderOptions();
         setStatus("Carte modifiée", map === "france" ? "Mode France actif." : "Mode Lyon actif.", "info");
-        loadDatabase(map).catch(() => {});
+        loadDatabase(map).catch(() => { });
 
         if (state.targetReady) {
           state.clickPoint = null;
@@ -957,16 +969,18 @@
 
         const title = document.createElement("h2");
         title.className = "control-title";
-        title.textContent = state.currentMap === "france" ? "Résultat France" : "Destination Lyon";
+        title.textContent = state.currentMap === "france" ? "Type de résultat France" : "Type de résultat Lyon";
         panel.append(title);
 
         if (state.currentMap === "france") {
-          const field = createField("Mode de recherche");
+          const field = document.createElement("div");
+          field.className = "field";
+
           const select = document.createElement("select");
           select.id = "resultMode";
           select.append(
-            option("database", "Base locale rapide"),
-            option("real", "Ville réelle par géocodage")
+            option("database", "Ville à découvrir"),
+            option("real", "Ville touchée")
           );
           select.value = state.resultMode;
           select.addEventListener("change", () => {
@@ -976,13 +990,15 @@
           field.append(select);
           panel.append(field);
         } else {
-          const field = createField("Type de lieu");
+          const field = document.createElement("div");
+          field.className = "field";
+
           const select = document.createElement("select");
           select.id = "lyonMode";
           select.append(
             option("all", "Tout"),
             option("bar", "Bars"),
-            option("resto", "Restaurants"),
+            option("restaurant", "Restaurants"),
             option("activite", "Activités")
           );
           select.value = state.lyonMode;
@@ -994,10 +1010,10 @@
           panel.append(field);
         }
 
-        const dbNote = document.createElement("p");
+        /*const dbNote = document.createElement("p");
         dbNote.className = "small-note";
         dbNote.textContent = databaseLabel(state.currentMap);
-        panel.append(dbNote);
+        panel.append(dbNote);*/
       }
 
       function createField(labelText) {
@@ -1192,7 +1208,7 @@
         els.canvas.height = state.targetCanvas.height;
         setCanvasShellEmpty(false);
         ctx.drawImage(state.targetCanvas, 0, 0);
-        els.workTitle.textContent = "Cible recadrée";
+        els.workTitle.textContent = "Sélectionner l'impact";
         els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
 
         if (state.clickPoint) {
@@ -1254,7 +1270,7 @@
           }
 
           applyFrameCorners(detection.corners, detection);
-          showMessage("info", "Cible recadrée", "Touchez le centre de l’impact sur la carte affichée.");
+          showMessage("info", "Cible chargée", "Touchez l’impact de la fléchette sur la carte.");
           setStatus("Cible prête", `Cadre détecté (${detection.label}).`, "success");
         } catch (error) {
           console.warn("Détection du cadre échouée", error);
@@ -1352,7 +1368,7 @@
         drawOriginalPhoto();
         renderCornerHelp();
         setStep(title, text);
-        showMessage("info", "Coins du cadre", "Touchez les quatre coins du rectangle. L’app remettra les coins dans le bon ordre avant le recadrage.");
+        showMessage("info", "Sélection manuelle du cadre", "Touchez manuellement les quatre coins de la cible sur votre photo.");
         setStatus("Sélection manuelle", "Touchez les quatre coins du cadre.", "info");
         syncControls();
       }
@@ -1446,9 +1462,14 @@
           x: clamp(point.x, 0, state.targetSize.width),
           y: clamp(point.y, 0, state.targetSize.height)
         };
+
+
         state.stage = "result";
         drawTarget();
+
         runAnalysis();
+        els.workTitle.textContent = "Résultats";
+
       }
 
       function retryImpact() {
@@ -1474,7 +1495,7 @@
         els.fileInput.value = "";
         els.fileMeta.textContent = "Formats acceptés : JPEG, PNG, WebP, HEIC.";
         els.photoMeta.textContent = "Aucune image";
-        els.workTitle.textContent = "Zone de jeu";
+        els.workTitle.textContent = "Charger la cible";
         clearCanvas(ctx, els.canvas);
         els.photoEmpty.classList.remove("is-hidden");
         setCanvasShellEmpty(true);
@@ -1601,7 +1622,7 @@
           coordinates,
           nearest,
           mapsUrl: googleMapsUrl(`${coordinates.lat},${coordinates.lon}`),
-          note: "Résultat calculé avec la base locale, sans géocodage réseau."
+          //note: "Résultat calculé avec la base locale, sans géocodage réseau."
         });
       }
 
@@ -1677,9 +1698,12 @@
 
         const grid = resultGrid([
           ["Type", place.type || "Non renseigné"],
-          ["Adresse", place.adresse || place.address || "Non renseignée"],
-          ["Distance", `${numberFormat.format(nearest.distance)} km`],
-          ["GPS", `${coordinates.lat.toFixed(6)}, ${coordinates.lon.toFixed(6)}`]
+          //["Commentaire", place.Commentaire || place.Commentaire || "Non renseignée"],
+          ["Commentaire", place.commentaire || place.commentaire || "Non renseignée"],
+
+          //["Adresse", place.adresse || place.address || "Non renseignée"],
+          //["Distance", `${numberFormat.format(nearest.distance)} km`],
+          //["GPS", `${coordinates.lat.toFixed(6)}, ${coordinates.lon.toFixed(6)}`]
         ]);
 
         const maps = safeExternalUrl(place.maps) || googleMapsUrl(place.adresse || place.nom || `${coordinates.lat},${coordinates.lon}`);
@@ -2913,7 +2937,7 @@
       }
 
       function warmOpenCv() {
-        const start = () => ensureOpenCv().catch(() => {});
+        const start = () => ensureOpenCv().catch(() => { });
         if ("requestIdleCallback" in window) {
           window.requestIdleCallback(start, { timeout: 1800 });
         } else {
@@ -3105,4 +3129,5 @@
     })();
   </script>
 </body>
+
 </html>
