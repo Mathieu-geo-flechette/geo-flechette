@@ -379,6 +379,12 @@
       display: none;
     }
 
+    .workspace canvas {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+    }
+
     .result-panel {
       margin-top: 16px;
       padding: 18px;
@@ -702,7 +708,7 @@
           <span id="photoMeta" class="meta">Aucune image</span>
         </div>
         <div id="canvasShell" class="canvas-shell is-empty">
-          <canvas id="canvas" width="960" height="640" aria-label="Photo de la cible"></canvas>
+          <canvas id="canvas" width="960" height="960" aria-label="Photo de la cible"></canvas>
           <div id="photoEmpty" class="empty-state">
             <div class="upload-empty">
               <label class="upload-button" for="fileInput">
@@ -720,6 +726,7 @@
         <div class="actions">
           <button id="manualFrameBtn" class="secondary-button" type="button" disabled>Reprendre les coins</button>
           <button id="retryBtn" class="secondary-button" type="button" disabled>Reprendre l’impact</button>
+          <button id="retakePhotoBtn" class="secondary-button">📷 Reprendre la photo</button>
           <button id="resetBtn" class="danger-button" type="button" disabled>Nouvelle partie</button>
         </div>
       </section>
@@ -729,6 +736,7 @@
 
     <section id="output" class="result-panel" aria-live="polite"></section>
 
+    <!-- 
     <section class="control-panel step-card" aria-live="polite">
       <div id="engineState" class="engine-pill">Analyse en veille</div>
       <div id="statusBox" class="status-box" data-tone="info" role="status" aria-live="polite">
@@ -740,7 +748,7 @@
       <p id="stepText">Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre
         les quatre coins à la main.</p>
     </section>
-
+-->
 
   </main>
 
@@ -761,9 +769,9 @@
         zones: {
           france: {
             latMin: 41,
-            latMax: 51.5,
-            lonMin: -5.5,
-            lonMax: 9.8
+            latMax: 51.3,
+            lonMin: -5.3,
+            lonMax: 9.48
           },
           lyon: {
             latMin: 45.70,
@@ -781,19 +789,20 @@
         fileMeta: document.getElementById("fileMeta"),
         photoMeta: document.getElementById("photoMeta"),
         photoEmpty: document.getElementById("photoEmpty"),
-        stepTitle: document.getElementById("stepTitle"),
-        stepText: document.getElementById("stepText"),
+        //stepTitle: document.getElementById("stepTitle"),
+        //stepText: document.getElementById("stepText"),
         workTitle: document.getElementById("workTitle"),
         cornerHelp: document.getElementById("cornerHelp"),
         manualFrameBtn: document.getElementById("manualFrameBtn"),
         retryBtn: document.getElementById("retryBtn"),
+        retakePhotoBtn: document.getElementById("retakePhotoBtn"),
         resetBtn: document.getElementById("resetBtn"),
         output: document.getElementById("output"),
         optionsPanel: document.getElementById("optionsPanel"),
-        statusBox: document.getElementById("statusBox"),
-        statusTitle: document.getElementById("statusTitle"),
-        statusText: document.getElementById("statusText"),
-        engineState: document.getElementById("engineState"),
+        //statusBox: document.getElementById("statusBox"),
+        //statusTitle: document.getElementById("statusTitle"),
+        //statusText: document.getElementById("statusText"),
+        //engineState: document.getElementById("engineState"),
         mapButtons: Array.from(document.querySelectorAll("[data-map]"))
       };
 
@@ -874,7 +883,7 @@
         clearCanvas(ctx, els.canvas);
         renderOptions();
         showMessage("info", "Prêt", "Chargez une photo de la cible pour commencer.");
-        setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
+        //setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         bindEvents();
         syncControls();
         loadDatabase("france").catch(() => { });
@@ -889,6 +898,7 @@
         els.canvas.addEventListener("pointercancel", clearPointerIntent);
         els.manualFrameBtn.addEventListener("click", () => startManualCorners("Reprendre les coins", "Touchez les quatre coins du cadre sur la photo originale."));
         els.retryBtn.addEventListener("click", retryImpact);
+        els.retakePhotoBtn.addEventListener("click", () => els.fileInput.click());
         els.resetBtn.addEventListener("click", resetGame);
 
         for (const button of els.mapButtons) {
@@ -916,7 +926,7 @@
         }
       }
 
-      function setStep(title, text) {
+      /*function setStep(title, text) {
         els.stepTitle.textContent = title;
         els.stepText.textContent = text;
       }
@@ -931,12 +941,12 @@
         els.engineState.textContent = text;
         els.engineState.classList.toggle("is-ready", mode === "ready");
         els.engineState.classList.toggle("is-error", mode === "error");
-      }
+      }*/
 
       function setBusy(isBusy, title = "", text = "") {
         state.busy = isBusy;
         if (title) {
-          setStatus(title, text, isBusy ? "warning" : "info");
+          //setStatus(title, text, isBusy ? "warning" : "info");
         }
         syncControls();
       }
@@ -947,14 +957,14 @@
         state.currentMap = map;
         state.runSerial += 1;
         renderOptions();
-        setStatus("Carte modifiée", map === "france" ? "Mode France actif." : "Mode Lyon actif.", "info");
+        //setStatus("Carte modifiée", map === "france" ? "Mode France actif." : "Mode Lyon actif.", "info");
         loadDatabase(map).catch(() => { });
 
         if (state.targetReady) {
           state.clickPoint = null;
           drawTarget();
           showMessage("info", "Nouvelle carte active", "Touchez l’impact sur la cible recadrée pour relancer l’analyse.");
-          setStep("Toucher l’impact", "La cible est recadrée. Touchez le centre de l’impact sur la carte affichée.");
+          //setStep("Toucher l’impact", "La cible est recadrée. Touchez le centre de l’impact sur la carte affichée.");
         } else if (state.imageReady) {
           drawOriginalPhoto();
           showMessage("info", "Nouvelle carte active", "Terminez le cadrage de la photo avant de choisir l’impact.");
@@ -1051,7 +1061,7 @@
         }
 
         setBusy(true, "Lecture de la photo", "Préparation de l’image...");
-        setStep("Préparer la photo", "L’image est lue puis le cadre de la cible est recherché automatiquement.");
+        //setStep("Préparer la photo", "L’image est lue puis le cadre de la cible est recherché automatiquement.");
         showMessage("info", "Photo en cours de lecture", "L’image est redimensionnée pour accélérer l’analyse sans perdre les contours utiles.");
         clearWorkspaceState();
         state.clickPoint = null;
@@ -1072,7 +1082,7 @@
           setCanvasShellEmpty(false);
           els.fileMeta.textContent = `${state.imageName} - ${Math.round(file.size / 1024)} Ko`;
           els.photoMeta.textContent = `${els.canvas.width} x ${els.canvas.height}px`;
-          setStatus("Cadre en recherche", "La cible est analysée avant recadrage.", "warning");
+          //setStatus("Cadre en recherche", "La cible est analysée avant recadrage.", "warning");
 
           await detectAndPrepareTarget(serial);
         } catch (error) {
@@ -1084,8 +1094,8 @@
           els.photoEmpty.classList.remove("is-hidden");
           setCanvasShellEmpty(true);
           showMessage("error", "Image illisible", userImageError(error));
-          setStatus("Image illisible", "Essayez une autre photo ou exportez-la en JPEG.", "error");
-          setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
+          //setStatus("Image illisible", "Essayez une autre photo ou exportez-la en JPEG.", "error");
+          //setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         } finally {
           setBusy(false);
         }
@@ -1113,7 +1123,7 @@
           await hasHeicSignature(file);
         if (!isHeic) return file;
 
-        setStatus("Conversion HEIC", "Conversion en JPEG avant analyse...", "warning");
+        //setStatus("Conversion HEIC", "Conversion en JPEG avant analyse...", "warning");
         await ensureHeicConverter();
         const converted = await window.heic2any({
           blob: file,
@@ -1161,7 +1171,7 @@
       }
 
       function photoCanvasSize() {
-        if (!state.image) return { width: 960, height: 640 };
+        if (!state.image) return { width: 960, height: 960 };
         const scale = Math.min(1, CONFIG.imageMaxSide / Math.max(state.image.width, state.image.height));
         return {
           width: Math.max(1, Math.round(state.image.width * scale)),
@@ -1264,14 +1274,14 @@
               "Je n’ai pas un cadre assez fiable. Touchez les quatre coins sur la photo originale.",
               true
             );
-            setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
+            //setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
             showMessage("warning", "Cadre à préciser", "Le cadre n’est pas assez net pour être validé automatiquement. Touchez les quatre coins de la cible.");
             return;
           }
 
           applyFrameCorners(detection.corners, detection);
           showMessage("info", "Cible chargée", "Touchez l’impact de la fléchette sur la carte.");
-          setStatus("Cible prête", `Cadre détecté (${detection.label}).`, "success");
+          //setStatus("Cible prête", `Cadre détecté (${detection.label}).`, "success");
         } catch (error) {
           console.warn("Détection du cadre échouée", error);
           startManualCorners(
@@ -1279,7 +1289,7 @@
             "La détection automatique a échoué. Touchez les quatre coins du cadre sur la photo originale.",
             true
           );
-          setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
+          //setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
           showMessage("warning", "Cadre à préciser", "La sélection manuelle prend le relais pour obtenir un recadrage fiable.");
         } finally {
           deleteMat(src);
@@ -1296,7 +1306,7 @@
         state.stage = "impact";
         drawTarget();
         renderCornerHelp();
-        setStep("Toucher l’impact", "La cible est recadrée. Touchez le centre de l’impact sur la carte affichée.");
+        //setStep("Toucher l’impact", "La cible est recadrée. Touchez le centre de l’impact sur la carte affichée.");
         syncControls();
       }
 
@@ -1367,9 +1377,9 @@
         state.targetCanvas.height = 0;
         drawOriginalPhoto();
         renderCornerHelp();
-        setStep(title, text);
+        //setStep(title, text);
         showMessage("info", "Sélection manuelle du cadre", "Touchez manuellement les quatre coins de la cible sur votre photo.");
-        setStatus("Sélection manuelle", "Touchez les quatre coins du cadre.", "info");
+        //setStatus("Sélection manuelle", "Touchez les quatre coins du cadre.", "info");
         syncControls();
       }
 
@@ -1436,8 +1446,8 @@
 
         if (state.manualCorners.length < 4) {
           const next = CORNER_LABELS[state.manualCorners.length] || "coin suivant";
-          setStep("Placer les coins", `Coin enregistré. Touchez maintenant : ${next}.`);
-          setStatus("Coins du cadre", `${state.manualCorners.length}/4 coins sélectionnés.`, "info");
+          //setStep("Placer les coins", `Coin enregistré. Touchez maintenant : ${next}.`);
+          //setStatus("Coins du cadre", `${state.manualCorners.length}/4 coins sélectionnés.`, "info");
           return;
         }
 
@@ -1445,14 +1455,14 @@
         try {
           applyFrameCorners(corners, { confidence: 1, label: "manuel" });
           showMessage("info", "Cible recadrée", "Touchez le centre de l’impact sur la carte affichée.");
-          setStatus("Cible prête", "Cadre manuel appliqué.", "success");
+          //setStatus("Cible prête", "Cadre manuel appliqué.", "success");
         } catch (error) {
           console.error(error);
           state.manualCorners = [];
           drawOriginalPhoto();
           renderCornerHelp();
           showMessage("error", "Recadrage impossible", "Le recadrage n’a pas pu être appliqué. Vérifiez le moteur d’analyse, puis reprenez les coins.");
-          setStatus("Recadrage impossible", "Reprenez les quatre coins du cadre.", "error");
+          //setStatus("Recadrage impossible", "Reprenez les quatre coins du cadre.", "error");
         }
       }
 
@@ -1479,8 +1489,8 @@
         state.stage = "impact";
         drawTarget();
         showMessage("info", "Impact à reprendre", "Touchez le centre du nouvel impact sur la cible recadrée.");
-        setStatus("Impact à reprendre", "Sélectionnez un point sur la cible.", "info");
-        setStep("Toucher l’impact", "Touchez le centre de l’impact sur la carte affichée.");
+        //setStatus("Impact à reprendre", "Sélectionnez un point sur la cible.", "info");
+        //setStep("Toucher l’impact", "Touchez le centre de l’impact sur la carte affichée.");
         syncControls();
       }
 
@@ -1500,8 +1510,8 @@
         els.photoEmpty.classList.remove("is-hidden");
         setCanvasShellEmpty(true);
         showMessage("info", "Nouvelle partie", "Chargez une photo de la cible pour commencer.");
-        setStatus("Prêt", "Chargez une photo pour commencer.", "info");
-        setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
+        //setStatus("Prêt", "Chargez une photo pour commencer.", "info");
+        //setStep("Choisir une photo", "Ajoutez une photo complète de la cible. Si le cadre n’est pas assez net, vous pourrez reprendre les quatre coins à la main.");
         syncControls();
       }
 
@@ -1520,13 +1530,13 @@
 
           const coordinates = pointToCoordinates(x, y, state.targetSize.width, state.targetSize.height, state.currentMap);
           await renderDestination(coordinates, x, y, state.targetSize, serial);
-          setStep("Résultat", "La destination est affichée. Vous pouvez reprendre l’impact ou lancer une nouvelle partie.");
-          setStatus("Analyse terminée", "Résultat calculé.", "success");
+          //setStep("Résultat", "La destination est affichée. Vous pouvez reprendre l’impact ou lancer une nouvelle partie.");
+          //setStatus("Analyse terminée", "Résultat calculé.", "success");
         } catch (error) {
           console.error(error);
           drawTarget();
           showMessage("error", error.title || "Analyse impossible", error.userMessage || "Une erreur inattendue a empêché l’analyse. Réessayez avec l’impact ou les coins.");
-          setStatus(error.title || "Analyse impossible", error.userMessage || "Réessayez avec l’impact ou les coins.", "error");
+          //(error.title || "Analyse impossible", error.userMessage || "Réessayez avec l’impact ou les coins.", "error");
         } finally {
           if (serial === state.runSerial) setBusy(false);
         }
@@ -2947,13 +2957,13 @@
 
       function ensureOpenCv() {
         if (isOpenCvReady()) {
-          setEngineState("Analyse prête", "ready");
+          //setEngineState("Analyse prête", "ready");
           return Promise.resolve();
         }
 
         if (state.cvPromise) return state.cvPromise;
 
-        setEngineState("Analyse en préparation");
+        //setEngineState("Analyse en préparation");
         state.cvPromise = new Promise((resolve, reject) => {
           let settled = false;
           let intervalId = 0;
@@ -2964,7 +2974,7 @@
             settled = true;
             window.clearInterval(intervalId);
             window.clearTimeout(timeoutId);
-            setEngineState("Analyse prête", "ready");
+            //setEngineState("Analyse prête", "ready");
             resolve();
           };
 
@@ -2973,7 +2983,7 @@
             settled = true;
             window.clearInterval(intervalId);
             window.clearTimeout(timeoutId);
-            setEngineState("Analyse indisponible", "error");
+            //setEngineState("Analyse indisponible", "error");
             reject(new Error("OpenCV unavailable"));
           };
 
