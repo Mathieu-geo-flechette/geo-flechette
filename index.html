@@ -758,7 +758,7 @@
 
       const CONFIG = {
         imageMaxSide: 1800,
-        detectionMaxSide: 1150,
+        detectionMaxSide: 1800,
         requestTimeoutMs: 6500,
         cvUrl: "https://docs.opencv.org/4.x/opencv.js",
         heicUrl: "https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js",
@@ -1852,28 +1852,44 @@
       /*-------------
         Detect corner
       --------------*/
+      /* ---------------------------------------------------------
+         Détection robuste des 4 marqueurs noirs de la carte France
+         IDs attendus : 0 = HG, 10 = HD, 20 = BD, 30 = BG.
+         Stratégie : contraste local + plusieurs masques + multi-échelle.
+      ---------------------------------------------------------- */
       function detectArucoFrameCorners(src) {
-        const maxSide = Math.max(src.cols, src.rows);
-        const scale = Math.min(1, CONFIG.detectionMaxSide / maxSide);
         let work = null;
-
         try {
+          const maxSide = Math.max(src.cols, src.rows);
+          const scale = Math.min(1, CONFIG.detectionMaxSide / maxSide);
           if (scale < 1) {
             work = new cv.Mat();
-            cv.resize(src, work, new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale)), 0, 0, cv.INTER_AREA);
+            cv.resize(src, work, new cv.Size(
+              Math.round(src.cols * scale),
+              Math.round(src.rows * scale)
+            ), 0, 0, cv.INTER_AREA);
           } else {
             work = src.clone();
           }
 
+          currentArucoWorkImage = work;
           const markers = detectArucoMarkers(work);
-          if (markers.length < 4) return null;
-
-          // Les IDs valident que ce sont les bons marqueurs, mais la géométrie
-          // finale privilégie leur position réelle dans la photo.
           const byId = bestArucoMarkersById(markers);
-          const byPosition = buildArucoFrameFromPositions(byId, work.cols, work.rows);
-          const byRole = buildArucoFrameFromRoles(byId, work.cols, work.rows);
-          const frame = byPosition || byRole;
+
+          // 4 marqueurs : solution nominale.
+          // 3 marqueurs : estimation projective du marqueur manquant à partir
+          // de la géométrie connue du rectangle cible, puis validation stricte.
+          let frame = null;
+          if (byId.size >= 4) {
+            frame =
+              buildArucoFrameFromRoles(byId, work.cols, work.rows) ||
+              buildArucoFrameFromPositions(byId, work.cols, work.rows);
+          } else if (byId.size === 3) {
+            frame = buildArucoFrameFromThree(byId, work.cols, work.rows);
+          } else {
+            console.info('ArUco insuffisants :', Array.from(byId.keys()));
+            return null;
+          }
           if (!frame) return null;
 
           return {
@@ -1885,97 +1901,170 @@
             label: frame.label
           };
         } catch (error) {
-          console.warn("Détection ArUco échouée", error);
+          console.warn('Détection ArUco échouée', error);
           return null;
         } finally {
+          currentArucoWorkImage = null;
           deleteMat(work);
         }
       }
 
       function detectArucoMarkers(src) {
+        const all = [];
+        const passes = [1, 1.35];
+
+        for (const scale of passes) {
+          let work = null;
+          try {
+            if (scale === 1) {
+              work = src.clone();
+            } else {
+              work = new cv.Mat();
+              cv.resize(src, work, new cv.Size(
+                Math.round(src.cols * scale),
+                Math.round(src.rows * scale)
+              ), 0, 0, cv.INTER_CUBIC);
+            }
+
+            const found = detectArucoMarkersAtScale(work);
+            for (const marker of found) {
+              all.push(scaleMarkerToSource(marker, scale));
+            }
+
+            if (hasAllRequiredArucoIds(all)) break;
+          } finally {
+            deleteMat(work);
+          }
+        }
+
+        return dedupeArucoMarkers(all);
+      }
+
+      function detectArucoMarkersAtScale(src) {
         const markers = [];
         let gray = null;
+        let enhanced = null;
         let blurred = null;
-        let darkMask = null;
-        let adaptiveMask = null;
-        let otsuMask = null;
+        let clahe = null;
+        let otsu = null;
 
         try {
           gray = new cv.Mat();
+          enhanced = new cv.Mat();
           blurred = new cv.Mat();
-          darkMask = new cv.Mat();
-          adaptiveMask = new cv.Mat();
-          otsuMask = new cv.Mat();
-
           cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-          cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
 
-          // Plusieurs masques donnent plus de chances de séparer les marqueurs
-          // d'une cible colorée, de textes noirs ou d'illustrations voisines.
-          cv.threshold(blurred, darkMask, 72, 255, cv.THRESH_BINARY_INV);
-          cv.adaptiveThreshold(blurred, adaptiveMask, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 35, 5);
-          cv.threshold(blurred, otsuMask, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+          // CLAHE compense les grandes ombres sans éclaircir toute la photo.
+          try {
+            clahe = new cv.CLAHE(2.2, new cv.Size(8, 8));
+            clahe.apply(gray, enhanced);
+          } catch (error) {
+            console.warn('CLAHE indisponible, niveaux de gris conservés', error);
+            gray.copyTo(enhanced);
+          }
 
-          // L'ouverture casse les petites connexions avec le fond imprimé.
-          // La fermeture répare ensuite les bords noirs du marqueur.
-          collectArucoMarkersFromMask(src, darkMask, markers, { openSize: 7, closeSize: 3 });
-          collectArucoMarkersFromMask(src, adaptiveMask, markers, { openSize: 5, closeSize: 3 });
-          collectArucoMarkersFromMask(src, otsuMask, markers, { openSize: 5, closeSize: 3 });
+          cv.GaussianBlur(enhanced, blurred, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
+
+          const base = Math.min(src.cols, src.rows);
+          const settings = [
+            { blockSize: makeOdd(Math.max(21, base * 0.025)), c: 3 },
+            { blockSize: makeOdd(Math.max(35, base * 0.045)), c: 5 },
+            { blockSize: makeOdd(Math.max(55, base * 0.075)), c: 7 },
+            { blockSize: makeOdd(Math.max(81, base * 0.11)), c: 9 }
+          ];
+
+          // Chaque masque est créé, exploité puis supprimé immédiatement afin
+          // de limiter la mémoire utilisée sur iPhone.
+          for (const setting of settings) {
+            let mask = null;
+            try {
+              mask = new cv.Mat();
+              cv.adaptiveThreshold(
+                blurred, mask, 255,
+                cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv.THRESH_BINARY_INV,
+                setting.blockSize,
+                setting.c
+              );
+              collectArucoMarkersFromMask(src, mask, markers,
+                `adaptatif-${setting.blockSize}-${setting.c}`);
+            } finally {
+              deleteMat(mask);
+            }
+          }
+
+          otsu = new cv.Mat();
+          cv.threshold(blurred, otsu, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+          collectArucoMarkersFromMask(src, otsu, markers, 'otsu');
+
+          // Secours utile lorsque le papier est clair et le marqueur noir net.
+          for (const value of [55, 80, 105, 130]) {
+            let mask = null;
+            try {
+              mask = new cv.Mat();
+              cv.threshold(blurred, mask, value, 255, cv.THRESH_BINARY_INV);
+              collectArucoMarkersFromMask(src, mask, markers, `fixe-${value}`);
+            } finally {
+              deleteMat(mask);
+            }
+          }
+
           return dedupeArucoMarkers(markers);
         } finally {
           deleteMat(gray);
+          deleteMat(enhanced);
           deleteMat(blurred);
-          deleteMat(darkMask);
-          deleteMat(adaptiveMask);
-          deleteMat(otsuMask);
+          deleteMat(clahe);
+          deleteMat(otsu);
         }
       }
 
-      function collectArucoMarkersFromMask(src, mask, markers, options = {}) {
+      function collectArucoMarkersFromMask(src, mask, markers, label) {
         let cleaned = null;
-        let openKernel = null;
-        let closeKernel = null;
+        let kernel = null;
         let contours = null;
         let hierarchy = null;
 
         try {
           cleaned = mask.clone();
-          if (options.openSize) {
-            openKernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(options.openSize, options.openSize));
-            cv.morphologyEx(cleaned, cleaned, cv.MORPH_OPEN, openKernel);
-          }
-          if (options.closeSize) {
-            closeKernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(options.closeSize, options.closeSize));
-            cv.morphologyEx(cleaned, cleaned, cv.MORPH_CLOSE, closeKernel);
-          }
+          kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3));
+          cv.morphologyEx(cleaned, cleaned, cv.MORPH_CLOSE, kernel);
 
           contours = new cv.MatVector();
           hierarchy = new cv.Mat();
-          cv.findContours(cleaned, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+          cv.findContours(cleaned, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
           const imageArea = src.cols * src.rows;
+          const minSide = Math.min(src.cols, src.rows);
+          const minArea = imageArea * 0.000045;
+          const maxArea = imageArea * 0.06;
+
           for (let i = 0; i < contours.size(); i += 1) {
             const contour = contours.get(i);
             let approx = null;
-
             try {
-              // Un marqueur attendu est un quadrilatère noir assez grand,
-              // mais jamais de la taille du cadre complet de la cible.
-              const area = cv.contourArea(contour);
-              if (area < imageArea * 0.00018 || area > imageArea * 0.13) continue;
+              const area = Math.abs(cv.contourArea(contour));
+              if (area < minArea || area > maxArea) continue;
 
-              const peri = cv.arcLength(contour, true);
-              approx = new cv.Mat();
-              cv.approxPolyDP(contour, approx, Math.max(3, 0.035 * peri), true);
-              if (approx.rows !== 4) continue;
+              const perimeter = cv.arcLength(contour, true);
+              if (perimeter < Math.max(35, minSide * 0.035)) continue;
 
-              const points = orderCorners(pointsFromApprox(approx));
-              if (!isPlausibleArucoQuad(points, src.cols, src.rows)) continue;
+              for (const ratio of [0.018, 0.025, 0.035, 0.05]) {
+                deleteMat(approx);
+                approx = new cv.Mat();
+                cv.approxPolyDP(contour, approx, Math.max(1.5, perimeter * ratio), true);
+                if (approx.rows !== 4) continue;
 
-              // Chaque quadrilatère plausible est redressé puis comparé aux
-              // quatre motifs 4x4 connus, avec rotation et petite tolérance.
-              const marker = decodeArucoCandidate(src, points, area);
-              if (marker) markers.push(marker);
+                const points = orderCorners(pointsFromApprox(approx));
+                if (!isPlausibleArucoQuad(points, src.cols, src.rows)) continue;
+
+                const marker = decodeArucoCandidate(src, points, area);
+                if (marker) {
+                  marker.source = label;
+                  markers.push(marker);
+                  break;
+                }
+              }
             } finally {
               deleteMat(approx);
               deleteMat(contour);
@@ -1983,17 +2072,17 @@
           }
         } finally {
           deleteMat(cleaned);
-          deleteMat(openKernel);
-          deleteMat(closeKernel);
+          deleteMat(kernel);
           deleteMat(contours);
           deleteMat(hierarchy);
         }
       }
 
       function isPlausibleArucoQuad(points, width, height) {
+        if (!points || points.length !== 4) return false;
         const area = polygonArea(points);
         const imageArea = width * height;
-        if (area < imageArea * 0.00018 || area > imageArea * 0.13) return false;
+        if (area < imageArea * 0.000045 || area > imageArea * 0.06) return false;
 
         const sides = [
           distance(points[0], points[1]),
@@ -2003,16 +2092,24 @@
         ];
         const shortest = Math.min(...sides);
         const longest = Math.max(...sides);
-        return shortest > Math.min(width, height) * 0.018 && longest / shortest < 3.2;
+        if (shortest < Math.max(8, Math.min(width, height) * 0.008)) return false;
+        if (longest / shortest > 5.2) return false;
+
+        const d1 = distance(points[0], points[2]);
+        const d2 = distance(points[1], points[3]);
+        if (Math.min(d1, d2) < shortest * 1.02) return false;
+        if (Math.max(d1, d2) / Math.min(d1, d2) > 3.8) return false;
+        return true;
       }
 
       function decodeArucoCandidate(src, points, area) {
-        const markerSize = 90;
+        const markerSize = 144;
         let srcPts = null;
         let dstPts = null;
         let homography = null;
         let warped = null;
         let gray = null;
+        let normalized = null;
 
         try {
           srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
@@ -2023,30 +2120,41 @@
           ]);
           dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
             0, 0,
-            markerSize, 0,
-            markerSize, markerSize,
-            0, markerSize
+            markerSize - 1, 0,
+            markerSize - 1, markerSize - 1,
+            0, markerSize - 1
           ]);
 
           homography = cv.getPerspectiveTransform(srcPts, dstPts);
           warped = new cv.Mat();
           gray = new cv.Mat();
-          cv.warpPerspective(src, warped, homography, new cv.Size(markerSize, markerSize), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+          normalized = new cv.Mat();
+          cv.warpPerspective(src, warped, homography,
+            new cv.Size(markerSize, markerSize),
+            cv.INTER_CUBIC, cv.BORDER_REPLICATE);
           cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
+          cv.GaussianBlur(gray, normalized, new cv.Size(3, 3), 0);
 
-          // Le marqueur imprimé fait 6x6 cellules : bord noir inclus,
-          // coeur 4x4 utile au centre.
-          const matrix = sampleArucoMatrix(gray, 6);
-          if (!matrix) return null;
+          const sampled = sampleArucoMatrix(normalized, 6);
+          if (!sampled || sampled.contrast < 12 || sampled.borderErrors > 6) return null;
 
-          const match = matchArucoPattern(matrix);
+          const match = matchArucoPattern(sampled.matrix);
           if (!match) return null;
+
+          const borderScore = 1 - sampled.borderErrors / 20;
+          const contrastScore = clamp((sampled.contrast - 10) / 80, 0, 1);
+          const score = clamp(
+            match.score * 0.72 + borderScore * 0.18 + contrastScore * 0.10,
+            0, 1
+          );
 
           return {
             id: match.id,
             rotation: match.rotation,
-            score: match.score,
+            score,
             mismatch: match.mismatch,
+            borderErrors: sampled.borderErrors,
+            contrast: sampled.contrast,
             area,
             corners: points,
             center: centroid(points)
@@ -2057,6 +2165,7 @@
           deleteMat(homography);
           deleteMat(warped);
           deleteMat(gray);
+          deleteMat(normalized);
         }
       }
 
@@ -2068,44 +2177,63 @@
         for (let y = 0; y < cells; y += 1) {
           const row = [];
           for (let x = 0; x < cells; x += 1) {
-            row.push(sampleGrayCell(gray, x * cellWidth, y * cellHeight, cellWidth, cellHeight));
+            row.push(sampleGrayCell(gray,
+              x * cellWidth, y * cellHeight,
+              cellWidth, cellHeight));
           }
           means.push(row);
         }
 
-        const values = means.flat();
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        if (max - min < 28) return null;
+        const border = [];
+        const inner = [];
+        for (let y = 0; y < cells; y += 1) {
+          for (let x = 0; x < cells; x += 1) {
+            const isBorder = x === 0 || y === 0 || x === cells - 1 || y === cells - 1;
+            (isBorder ? border : inner).push(means[y][x]);
+          }
+        }
 
-        const threshold = (min + max) / 2;
-        return means.map((row) => row.map((value) => (value > threshold ? 1 : 0)));
+        const black = median(border);
+        const sortedInner = inner.slice().sort((a, b) => a - b);
+        const brightest = sortedInner.slice(-Math.min(6, sortedInner.length));
+        const white = brightest.reduce((sum, value) => sum + value, 0) /
+          Math.max(1, brightest.length);
+        const contrast = white - black;
+        if (contrast < 12) return null;
+
+        // Plus près du noir pour conserver les cellules blanches sous ombre.
+        const threshold = black + contrast * 0.43;
+        const matrix = means.map((row) => row.map((value) => value > threshold ? 1 : 0));
+
+        let borderErrors = 0;
+        for (let y = 0; y < cells; y += 1) {
+          for (let x = 0; x < cells; x += 1) {
+            const isBorder = x === 0 || y === 0 || x === cells - 1 || y === cells - 1;
+            if (isBorder && matrix[y][x] !== 0) borderErrors += 1;
+          }
+        }
+
+        return { matrix, borderErrors, contrast, threshold, black, white };
       }
 
       function sampleGrayCell(gray, x, y, width, height) {
-        const left = Math.max(0, Math.round(x + width * 0.28));
-        const right = Math.min(gray.cols - 1, Math.round(x + width * 0.72));
-        const top = Math.max(0, Math.round(y + height * 0.28));
-        const bottom = Math.min(gray.rows - 1, Math.round(y + height * 0.72));
-        let sum = 0;
-        let count = 0;
+        const left = Math.max(0, Math.floor(x + width * 0.22));
+        const right = Math.min(gray.cols - 1, Math.ceil(x + width * 0.78));
+        const top = Math.max(0, Math.floor(y + height * 0.22));
+        const bottom = Math.min(gray.rows - 1, Math.ceil(y + height * 0.78));
+        const values = [];
 
         for (let py = top; py <= bottom; py += 1) {
           const rowOffset = py * gray.cols;
           for (let px = left; px <= right; px += 1) {
-            sum += gray.data[rowOffset + px];
-            count += 1;
+            values.push(gray.data[rowOffset + px]);
           }
         }
-
-        return count ? sum / count : 0;
+        return median(values);
       }
 
       function matchArucoPattern(matrix) {
         let best = null;
-
-        // On compare toutes les rotations pour accepter un marqueur posé
-        // dans n'importe quel sens sur le coin de la cible.
         for (const [id, pattern] of ARUCO_MARKER_PATTERNS) {
           for (let rotation = 0; rotation < 4; rotation += 1) {
             const rotated = rotateMatrix(matrix, rotation);
@@ -2116,8 +2244,7 @@
             }
           }
         }
-
-        return best && best.mismatch <= 5 ? best : null;
+        return best && best.mismatch <= 6 ? best : null;
       }
 
       function rotateMatrix(matrix, turns) {
@@ -2129,91 +2256,213 @@
       }
 
       function hammingDistance(a, b) {
-        let distanceValue = 0;
+        let value = 0;
         for (let y = 0; y < a.length; y += 1) {
           for (let x = 0; x < a[y].length; x += 1) {
-            if (a[y][x] !== b[y][x]) distanceValue += 1;
+            if (a[y][x] !== b[y][x]) value += 1;
           }
         }
-        return distanceValue;
+        return value;
       }
 
       function dedupeArucoMarkers(markers) {
-        const sorted = markers.slice().sort((a, b) => b.score - a.score || b.area - a.area);
+        const sorted = markers.slice().sort((a, b) =>
+          b.score - a.score || b.area - a.area);
         const unique = [];
-
         for (const marker of sorted) {
-          const duplicate = unique.some((item) => distance(item.center, marker.center) < Math.sqrt(Math.max(item.area, marker.area)) * 0.36);
+          const duplicate = unique.some((item) =>
+            item.id === marker.id &&
+            distance(item.center, marker.center) <
+              Math.sqrt(Math.max(item.area, marker.area)) * 0.55);
           if (!duplicate) unique.push(marker);
         }
-
         return unique;
+      }
+
+      function hasAllRequiredArucoIds(markers) {
+        const ids = new Set(markers.map((marker) => marker.id));
+        return ARUCO_FRAME_ROLES.every((item) => ids.has(item.id));
+      }
+
+      function scaleMarkerToSource(marker, scale) {
+        if (scale === 1) return { ...marker, detectionScale: 1 };
+        return {
+          ...marker,
+          detectionScale: scale,
+          area: marker.area / (scale * scale),
+          center: { x: marker.center.x / scale, y: marker.center.y / scale },
+          corners: marker.corners.map((point) => ({
+            x: point.x / scale,
+            y: point.y / scale
+          }))
+        };
+      }
+
+      function makeOdd(value) {
+        const rounded = Math.max(3, Math.round(value));
+        return rounded % 2 === 0 ? rounded + 1 : rounded;
+      }
+
+      function median(values) {
+        if (!values || values.length === 0) return 0;
+        const sorted = values.slice().sort((a, b) => a - b);
+        const middle = Math.floor(sorted.length / 2);
+        return sorted.length % 2
+          ? sorted[middle]
+          : (sorted[middle - 1] + sorted[middle]) / 2;
       }
 
       function bestArucoMarkersById(markers) {
         const expectedIds = new Set(ARUCO_FRAME_ROLES.map((item) => item.id));
         const byId = new Map();
-
         for (const marker of markers) {
           if (!expectedIds.has(marker.id)) continue;
           const previous = byId.get(marker.id);
-          if (!previous || marker.score > previous.score || (marker.score === previous.score && marker.area > previous.area)) {
+          if (!previous || marker.score > previous.score ||
+              (marker.score === previous.score && marker.area > previous.area)) {
             byId.set(marker.id, marker);
           }
         }
-
         return byId;
       }
 
       function buildArucoFrameFromRoles(byId, width, height) {
         const markers = [];
         const points = [];
-
         for (const item of ARUCO_FRAME_ROLES) {
           const marker = byId.get(item.id);
           if (!marker) return null;
           markers.push(marker);
           points.push(selectArucoFrameCorner(marker, item.role));
         }
+        return buildArucoFrameResult(points, markers, width, height, 'ArUco France');
+      }
 
-        return buildArucoFrameResult(points, markers, width, height, "ArUco 4x4");
+      function buildArucoFrameFromThree(byId, width, height) {
+        const ids = [0, 10, 20, 30];
+        const missingId = ids.find((id) => !byId.has(id));
+        if (missingId === undefined) return null;
+
+        const centers = Object.fromEntries(
+          ids.filter((id) => byId.has(id)).map((id) => [id, byId.get(id).center])
+        );
+
+        // Une homographie exacte nécessite 4 correspondances. Avec 3 marqueurs,
+        // on utilise l'approximation affine du parallélogramme uniquement pour
+        // prédire une zone locale, puis on cherche un vrai quadrilatère sombre.
+        let predicted;
+        if (missingId === 20) predicted = addPoints(centers[10], centers[30], centers[0]);
+        if (missingId === 30) predicted = addPoints(centers[0], centers[20], centers[10]);
+        if (missingId === 10) predicted = addPoints(centers[0], centers[20], centers[30]);
+        if (missingId === 0) predicted = addPoints(centers[10], centers[30], centers[20]);
+        if (!predicted || !isPointNearImage(predicted, width, height)) return null;
+
+        const known = Array.from(byId.values());
+        const averageSide = known.reduce((sum, marker) => {
+          const c = marker.corners;
+          return sum + (distance(c[0], c[1]) + distance(c[1], c[2]) +
+            distance(c[2], c[3]) + distance(c[3], c[0])) / 4;
+        }, 0) / known.length;
+
+        const candidate = findMarkerNearPrediction(currentArucoWorkImage, predicted,
+          averageSide, missingId);
+        if (!candidate) {
+          console.info('3 ArUco trouvés mais le 4e coin n’a pas pu être validé', missingId);
+          return null;
+        }
+
+        const completed = new Map(byId);
+        completed.set(missingId, candidate);
+        const frame = buildArucoFrameFromRoles(completed, width, height);
+        if (!frame) return null;
+        frame.confidence = Math.min(frame.confidence, 0.78);
+        frame.label = `ArUco France 3/4 (ID ${missingId} reconstruit)`;
+        return frame;
+      }
+
+      // Référence temporaire à l'image de travail, uniquement pendant la
+      // détection. Elle permet la recherche locale du quatrième marqueur.
+      let currentArucoWorkImage = null;
+
+      function addPoints(a, b, subtract) {
+        return { x: a.x + b.x - subtract.x, y: a.y + b.y - subtract.y };
+      }
+
+      function isPointNearImage(point, width, height) {
+        const marginX = width * 0.12;
+        const marginY = height * 0.12;
+        return point.x >= -marginX && point.x <= width + marginX &&
+          point.y >= -marginY && point.y <= height + marginY;
+      }
+
+      function findMarkerNearPrediction(src, predicted, averageSide, expectedId) {
+        if (!src) return null;
+        const radius = Math.max(averageSide * 2.8, Math.min(src.cols, src.rows) * 0.055);
+        const x0 = Math.max(0, Math.floor(predicted.x - radius));
+        const y0 = Math.max(0, Math.floor(predicted.y - radius));
+        const x1 = Math.min(src.cols, Math.ceil(predicted.x + radius));
+        const y1 = Math.min(src.rows, Math.ceil(predicted.y + radius));
+        if (x1 - x0 < 20 || y1 - y0 < 20) return null;
+
+        let roi = null;
+        try {
+          roi = src.roi(new cv.Rect(x0, y0, x1 - x0, y1 - y0));
+          const local = detectArucoMarkersAtScale(roi)
+            .filter((m) => m.id === expectedId)
+            .map((m) => ({
+              ...m,
+              center: { x: m.center.x + x0, y: m.center.y + y0 },
+              corners: m.corners.map((p) => ({ x: p.x + x0, y: p.y + y0 }))
+            }))
+            .sort((a, b) => {
+              const da = distance(a.center, predicted);
+              const db = distance(b.center, predicted);
+              return (b.score - a.score) || (da - db);
+            });
+          if (!local.length) return null;
+          const best = local[0];
+          if (distance(best.center, predicted) > radius * 0.85) return null;
+          return best;
+        } finally {
+          deleteMat(roi);
+        }
       }
 
       function buildArucoFrameFromPositions(byId, width, height) {
         const markers = Array.from(byId.values());
         if (markers.length < 4) return null;
-
-        // Le placement physique des IDs peut changer : on ordonne donc les
-        // centres détectés pour reconstruire haut-gauche, haut-droite, etc.
         const centerRefs = markers.map((marker, index) => ({
           x: marker.center.x,
           y: marker.center.y,
           index
         }));
         const orderedCenters = orderCorners(centerRefs);
-        const roles = ["topLeft", "topRight", "bottomRight", "bottomLeft"];
-        const points = orderedCenters.map((center, index) => selectArucoFrameCorner(markers[center.index], roles[index]));
+        const roles = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'];
+        const points = orderedCenters.map((center, index) =>
+          selectArucoFrameCorner(markers[center.index], roles[index]));
         const orderedMarkers = orderedCenters.map((center) => markers[center.index]);
-
-        return buildArucoFrameResult(points, orderedMarkers, width, height, "ArUco 4x4 positions");
+        return buildArucoFrameResult(points, orderedMarkers, width, height,
+          'ArUco France - secours spatial');
       }
 
       function buildArucoFrameResult(points, markers, width, height, label) {
         const ordered = orderCorners(points);
         if (!isValidQuad(ordered, width, height)) return null;
-
-        const averageScore = markers.reduce((sum, marker) => sum + marker.score, 0) / markers.length;
-        const confidence = clamp(averageScore * 0.72 + geometryScore(ordered, width, height) * 0.28, 0, 1);
-        if (confidence < 0.64) return null;
-
+        const averageScore = markers.reduce((sum, marker) => sum + marker.score, 0) /
+          markers.length;
+        const confidence = clamp(
+          averageScore * 0.74 + geometryScore(ordered, width, height) * 0.26,
+          0, 1
+        );
+        if (confidence < 0.56) return null;
         return { points: ordered, confidence, label };
       }
 
       function selectArucoFrameCorner(marker, role) {
         const corners = orderCorners(marker.corners);
-        if (role === "topLeft") return corners[0];
-        if (role === "topRight") return corners[1];
-        if (role === "bottomRight") return corners[2];
+        if (role === 'topLeft') return corners[0];
+        if (role === 'topRight') return corners[1];
+        if (role === 'bottomRight') return corners[2];
         return corners[3];
       }
 
