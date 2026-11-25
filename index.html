@@ -678,7 +678,7 @@
   <header class="app-header">
     <div class="title-block">
       <p class="eyebrow">🎯 Geo Fléchette 🎯</p>
-      <h1>Une cible, un impact, une destination !</h1>
+      <h1>Une cible, un impact, une destination !\ncorrection mercator</h1>
     </div>
 
   </header>
@@ -1786,11 +1786,64 @@
 
       function pointToCoordinates(x, y, width, height, map) {
         const zone = CONFIG.zones[map];
+
+        const normalizedX = clamp(x / width, 0, 1);
+        const normalizedY = clamp(y / height, 0, 1);
+
+        // ---------------------------------------------------------
+        // LONGITUDE
+        // En Web Mercator, X reste linéaire avec la longitude.
+        // ---------------------------------------------------------
+        const lon =
+          zone.lonMin +
+          normalizedX * (zone.lonMax - zone.lonMin);
+
+        // ---------------------------------------------------------
+        // LATITUDE
+        // En Web Mercator, Y n'est PAS linéaire avec la latitude.
+        // On interpole donc dans l'espace Mercator.
+        // ---------------------------------------------------------
+        const mercatorNorth = latitudeToMercator(zone.latMax);
+        const mercatorSouth = latitudeToMercator(zone.latMin);
+
+        const mercatorY =
+          mercatorNorth +
+          normalizedY * (mercatorSouth - mercatorNorth);
+
+        const lat = mercatorToLatitude(mercatorY);
+
         return {
-          lon: zone.lonMin + (x / width) * (zone.lonMax - zone.lonMin),
-          lat: zone.latMax - (y / height) * (zone.latMax - zone.latMin)
+          lat,
+          lon
         };
       }
+
+      function latitudeToMercator(latitude) {
+        // Limite théorique de Web Mercator
+        const clampedLatitude = clamp(
+          latitude,
+          -85.05112878,
+          85.05112878
+        );
+
+        const radians =
+          clampedLatitude * Math.PI / 180;
+
+        return Math.log(
+          Math.tan(
+            Math.PI / 4 + radians / 2
+          )
+        );
+      }
+
+      function mercatorToLatitude(mercatorY) {
+        return (
+          Math.atan(Math.sinh(mercatorY)) *
+          180 /
+          Math.PI
+        );
+      }
+
 
       function drawImpact(context, x, y, size) {
         const radius = clamp(size * 0.052, 22, 80);
