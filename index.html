@@ -123,7 +123,7 @@
     .eyebrow {
       margin: 0 0 6px;
       color: var(--accent);
-      font-size: 0.78 rem;
+      font-size: 0.78rem;
       font-weight: 800;
       letter-spacing: 0;
       text-transform: uppercase;
@@ -609,6 +609,20 @@
       color: var(--warn);
     }
 
+
+    .aruco-help {
+      display: grid;
+      gap: 7px;
+      margin: 4px 0 0;
+      padding-left: 22px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .aruco-help li::marker {
+      color: var(--warn);
+    }
+
     @keyframes spin {
       to {
         transform: rotate(360deg);
@@ -762,7 +776,6 @@
         requestTimeoutMs: 6500,
         cvUrl: "https://docs.opencv.org/4.x/opencv.js",
         heicUrl: "https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js",
-        jsQrUrl: "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js",
         dbFiles: {
           france: "bdd_villes.csv",
           lyon: "bdd_lyon.csv"
@@ -870,7 +883,6 @@
         busy: false,
         cvPromise: null,
         heicPromise: null,
-        jsQrPromise: null,
         runSerial: 0,
         cityInfoCache: new Map(),
         db: {
@@ -1258,45 +1270,143 @@
 
         try {
           await ensureOpenCv();
-          await ensureJsQr();
-          if (serial !== state.runSerial) return;
+
+          if (serial !== state.runSerial) {
+            return;
+          }
 
           const sourceCanvas = buildPhotoCanvas();
           src = cv.imread(sourceCanvas);
 
-          // Ordre volontaire : on tente d'abord les 4 marqueurs ArUco.
-          // La détection du cadre classique ne prend le relais que si les marqueurs échouent.
+          /*
+          ============================================================
+          DÉTECTION AUTOMATIQUE DU CADRE
+          ============================================================
+
+          La détection automatique utilise uniquement les 4 marqueurs
+          ArUco suivants :
+
+          ID 0  = haut gauche
+          ID 10 = haut droit
+          ID 20 = bas droit
+          ID 30 = bas gauche
+
+          L'ancienne détection géométrique est volontairement désactivée,
+          car elle pouvait sélectionner un mauvais contour et produire un
+          recadrage incorrect.
+          ============================================================
+          */
+
+          const detection = detectArucoFrameCorners(src);
+
+          /*
+          ============================================================
+          ANCIEN FALLBACK GÉOMÉTRIQUE DÉSACTIVÉ
+          ============================================================
+
+          Le code de detectFrameCorners() et de ses fonctions associées
+          est conservé plus bas dans ce fichier pour pouvoir être réutilisé
+          ultérieurement, mais il n'est plus appelé ici.
+
+          Ancien comportement :
+
           let detection = detectArucoFrameCorners(src);
+
           if (!detection || !detection.corners) {
             detection = detectFrameCorners(src);
           }
 
+          ============================================================
+          */
+
           if (!detection || !detection.corners) {
-            startManualCorners(
-              "Cadre à préciser",
-              "Je n’ai pas un cadre assez fiable. Touchez les quatre coins sur la photo originale.",
-              true
-            );
-            //setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
-            showMessage("warning", "Cadre à préciser", "Le cadre n’est pas assez net pour être validé automatiquement. Touchez les quatre coins de la cible.");
+            state.stage = "detectionFailed";
+            state.targetReady = false;
+            state.clickPoint = null;
+            state.frameCorners = null;
+            state.frameConfidence = null;
+
+            drawOriginalPhoto();
+
+            els.workTitle.textContent = "ArUco non détectés";
+            els.photoMeta.textContent =
+              `${els.canvas.width} x ${els.canvas.height}px`;
+
+            showArucoDetectionHelp();
+            syncControls();
             return;
           }
 
           applyFrameCorners(detection.corners, detection);
-          showMessage("info", "Cible chargée", "Touchez l’impact de la fléchette sur la carte.");
-          //setStatus("Cible prête", `Cadre détecté (${detection.label}).`, "success");
-        } catch (error) {
-          console.warn("Détection du cadre échouée", error);
-          startManualCorners(
-            "Cadre à préciser",
-            "La détection automatique a échoué. Touchez les quatre coins du cadre sur la photo originale.",
-            true
+
+          showMessage(
+            "info",
+            "Cible chargée",
+            "Les quatre repères ont été détectés. Touchez maintenant l’impact de la fléchette sur la carte."
           );
-          //setStatus("Cadre manuel", "Sélectionnez les quatre coins du cadre.", "warning");
-          showMessage("warning", "Cadre à préciser", "La sélection manuelle prend le relais pour obtenir un recadrage fiable.");
+        } catch (error) {
+          console.error("Erreur pendant la détection ArUco :", error);
+
+          state.stage = "detectionFailed";
+          state.targetReady = false;
+          state.clickPoint = null;
+          state.frameCorners = null;
+          state.frameConfidence = null;
+
+          if (state.imageReady) {
+            drawOriginalPhoto();
+          }
+
+          els.workTitle.textContent = "Détection impossible";
+
+          showArucoDetectionHelp(
+            "Une erreur est survenue pendant l’analyse de la photo."
+          );
+
+          syncControls();
         } finally {
           deleteMat(src);
         }
+      }
+
+      function showArucoDetectionHelp(
+        introduction = "Les quatre repères ArUco n’ont pas été détectés."
+      ) {
+        const root = messageRoot("warning");
+
+        const title = document.createElement("h2");
+        title.textContent = "Reprenez la photo";
+
+        const intro = document.createElement("p");
+        intro.textContent = introduction;
+
+        const instructions = document.createElement("ul");
+        instructions.className = "aruco-help";
+
+        const recommendations = [
+          "Les quatre marqueurs noirs doivent être entièrement visibles.",
+          "Aucun marqueur ne doit être coupé par le bord de la photo.",
+          "La cible doit occuper une grande partie de l’image : ne prenez pas la photo de trop loin.",
+          "Gardez le téléphone raisonnablement face à la cible et évitez une perspective trop inclinée.",
+          "La fléchette ne doit masquer ou traverser aucun des quatre marqueurs.",
+          "L’ombre de la fléchette ne doit pas recouvrir un marqueur.",
+          "La photo doit être nette, sans flou de mouvement.",
+          "Évitez les reflets et les ombres fortes sur les motifs noirs et blancs.",
+          "Vérifiez que les quatre motifs restent suffisamment grands et lisibles dans la photo."
+        ];
+
+        for (const recommendation of recommendations) {
+          const item = document.createElement("li");
+          item.textContent = recommendation;
+          instructions.append(item);
+        }
+
+        const conclusion = document.createElement("p");
+        conclusion.textContent =
+          "Appuyez sur « Reprendre la photo » après avoir corrigé le cadrage.";
+
+        root.append(title, intro, instructions, conclusion);
+        els.output.replaceChildren(root);
       }
 
       function applyFrameCorners(corners, detection = null) {
@@ -1863,59 +1973,21 @@
         try {
           if (scale < 1) {
             work = new cv.Mat();
-            cv.resize(
-              src,
-              work,
-              new cv.Size(
-                Math.round(src.cols * scale),
-                Math.round(src.rows * scale)
-              ),
-              0,
-              0,
-              cv.INTER_AREA
-            );
+            cv.resize(src, work, new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale)), 0, 0, cv.INTER_AREA);
           } else {
             work = src.clone();
           }
 
-          // Nouvelle cible :
-          // QR = haut gauche, ArUco 10 = haut droit,
-          // ArUco 20 = bas droit, ArUco 30 = bas gauche.
-          const qr = detectTopLeftQRCode(work);
           const markers = detectArucoMarkers(work);
+          if (markers.length < 4) return null;
+
+          // Les IDs valident que ce sont les bons marqueurs, mais la géométrie
+          // finale privilégie leur position réelle dans la photo.
           const byId = bestArucoMarkersById(markers);
-
-          let frame = null;
-
-          if (qr && byId.has(10) && byId.has(20) && byId.has(30)) {
-            frame = buildFrameFromQrAndAruco(
-              qr,
-              byId,
-              work.cols,
-              work.rows
-            );
-          }
-
-          // Compatibilité conservée avec l'ancienne cible 4 ArUco.
-          if (
-            !frame &&
-            byId.has(0) &&
-            byId.has(10) &&
-            byId.has(20) &&
-            byId.has(30)
-          ) {
-            frame =
-              buildArucoFrameFromPositions(byId, work.cols, work.rows) ||
-              buildArucoFrameFromRoles(byId, work.cols, work.rows);
-          }
-
-          if (!frame) {
-            console.info("Repères incomplets", {
-              qr: Boolean(qr),
-              arucoIds: Array.from(byId.keys())
-            });
-            return null;
-          }
+          const byPosition = buildArucoFrameFromPositions(byId, work.cols, work.rows);
+          const byRole = buildArucoFrameFromRoles(byId, work.cols, work.rows);
+          const frame = byPosition || byRole;
+          if (!frame) return null;
 
           return {
             corners: frame.points.map((point) => ({
@@ -1926,146 +1998,11 @@
             label: frame.label
           };
         } catch (error) {
-          console.warn("Détection QR + ArUco échouée", error);
+          console.warn("Détection ArUco échouée", error);
           return null;
         } finally {
           deleteMat(work);
         }
-      }
-
-      function detectTopLeftQRCode(src) {
-        if (typeof window.jsQR !== "function") {
-          console.warn("jsQR n'est pas chargé");
-          return null;
-        }
-
-        let rgba = null;
-        try {
-          rgba = new cv.Mat();
-
-          if (src.channels() === 4) {
-            src.copyTo(rgba);
-          } else if (src.channels() === 3) {
-            cv.cvtColor(src, rgba, cv.COLOR_RGB2RGBA);
-          } else {
-            cv.cvtColor(src, rgba, cv.COLOR_GRAY2RGBA);
-          }
-
-          const pixels = new Uint8ClampedArray(
-            rgba.data.buffer,
-            rgba.data.byteOffset,
-            rgba.data.byteLength
-          );
-
-          const result = window.jsQR(
-            pixels,
-            rgba.cols,
-            rgba.rows,
-            { inversionAttempts: "attemptBoth" }
-          );
-
-          if (!result || !result.location) {
-            console.info("QR haut gauche non détecté");
-            return null;
-          }
-
-          const location = result.location;
-          const corners = orderCorners([
-            {
-              x: location.topLeftCorner.x,
-              y: location.topLeftCorner.y
-            },
-            {
-              x: location.topRightCorner.x,
-              y: location.topRightCorner.y
-            },
-            {
-              x: location.bottomRightCorner.x,
-              y: location.bottomRightCorner.y
-            },
-            {
-              x: location.bottomLeftCorner.x,
-              y: location.bottomLeftCorner.y
-            }
-          ]);
-
-          const center = centroid(corners);
-
-          // Protection contre un éventuel autre QR imprimé sur la carte.
-          // Le repère attendu doit se trouver dans la moitié haute-gauche.
-          if (
-            center.x > src.cols * 0.52 ||
-            center.y > src.rows * 0.52
-          ) {
-            console.warn("QR trouvé hors de la zone haut-gauche");
-            return null;
-          }
-
-          const qrArea = polygonArea(corners);
-          const imageArea = src.cols * src.rows;
-          if (
-            qrArea < imageArea * 0.00012 ||
-            qrArea > imageArea * 0.14
-          ) {
-            console.warn("Taille du QR incohérente");
-            return null;
-          }
-
-          return {
-            text: String(result.data || ""),
-            corners,
-            center,
-            // Le contour de la zone géographique part du coin extérieur
-            // haut-gauche du QR, comme auparavant avec l'ArUco 0.
-            frameCorner: corners[0]
-          };
-        } finally {
-          deleteMat(rgba);
-        }
-      }
-
-      function buildFrameFromQrAndAruco(qr, byId, width, height) {
-        const marker10 = byId.get(10);
-        const marker20 = byId.get(20);
-        const marker30 = byId.get(30);
-
-        if (!qr || !marker10 || !marker20 || !marker30) return null;
-
-        // Vérification de l'ordre global des quatre repères.
-        if (qr.center.x >= marker10.center.x) return null;
-        if (qr.center.y >= marker30.center.y) return null;
-        if (marker10.center.y >= marker20.center.y) return null;
-        if (marker30.center.x >= marker20.center.x) return null;
-
-        const points = orderCorners([
-          qr.frameCorner,
-          selectArucoFrameCorner(marker10, "topRight"),
-          selectArucoFrameCorner(marker20, "bottomRight"),
-          selectArucoFrameCorner(marker30, "bottomLeft")
-        ]);
-
-        if (!isValidQuad(points, width, height)) {
-          console.warn("Cadre QR + ArUco géométriquement invalide");
-          return null;
-        }
-
-        const averageMarkerScore =
-          (marker10.score + marker20.score + marker30.score) / 3;
-
-        const confidence = clamp(
-          averageMarkerScore * 0.72 +
-          geometryScore(points, width, height) * 0.28,
-          0,
-          1
-        );
-
-        if (confidence < 0.60) return null;
-
-        return {
-          points,
-          confidence,
-          label: "QR haut-gauche + ArUco 10/20/30"
-        };
       }
 
       function detectArucoMarkers(src) {
@@ -2400,6 +2337,17 @@
         );
       }
 
+      /*
+      ============================================================
+      ANCIEN SYSTÈME DE DÉTECTION GÉOMÉTRIQUE DU CADRE
+      ============================================================
+
+      Ce système est volontairement désactivé dans
+      detectAndPrepareTarget(). Les fonctions sont conservées pour
+      d'éventuels essais futurs, mais detectFrameCorners() n'est plus
+      appelée dans le fonctionnement normal de l'application.
+      ============================================================
+      */
       function detectFrameCorners(src) {
         const maxSide = Math.max(src.cols, src.rows);
         const scale = Math.min(1, CONFIG.detectionMaxSide / maxSide);
@@ -3192,25 +3140,6 @@
         });
 
         return state.cvPromise;
-      }
-
-      function ensureJsQr() {
-        if (typeof window.jsQR === "function") {
-          return Promise.resolve();
-        }
-
-        if (state.jsQrPromise) return state.jsQrPromise;
-
-        state.jsQrPromise = loadScript(CONFIG.jsQrUrl).catch((error) => {
-          state.jsQrPromise = null;
-          throw friendlyError(
-            "Détection QR indisponible",
-            "Le lecteur QR n'a pas pu se charger. Vérifiez la connexion internet puis rechargez la page.",
-            error
-          );
-        });
-
-        return state.jsQrPromise;
       }
 
       function ensureHeicConverter() {
