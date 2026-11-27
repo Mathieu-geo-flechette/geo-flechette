@@ -678,7 +678,7 @@
   <header class="app-header">
     <div class="title-block">
       <p class="eyebrow">🎯 Geo Fléchette 🎯</p>
-      <h1>Une cible, un impact, une destination !\ncorrection mercator</h1>
+      <h1>Une cible, un impact, une destination !</h1>
     </div>
 
   </header>
@@ -762,6 +762,7 @@
         requestTimeoutMs: 6500,
         cvUrl: "https://docs.opencv.org/4.x/opencv.js",
         heicUrl: "https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js",
+        jsQrUrl: "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js",
         dbFiles: {
           france: "bdd_villes.csv",
           lyon: "bdd_lyon.csv"
@@ -869,6 +870,7 @@
         busy: false,
         cvPromise: null,
         heicPromise: null,
+        jsQrPromise: null,
         runSerial: 0,
         cityInfoCache: new Map(),
         db: {
@@ -1256,6 +1258,11 @@
 
         try {
           await ensureOpenCv();
+          // jsQR détecte le QR haut-gauche. Si son chargement échoue,
+          // les anciennes cibles 4 ArUco et les fallbacks restent utilisables.
+          await ensureJsQr().catch((error) => {
+            console.warn("Détecteur QR indisponible", error);
+          });
           if (serial !== state.runSerial) return;
 
           const sourceCanvas = buildPhotoCanvas();
@@ -1786,64 +1793,29 @@
 
       function pointToCoordinates(x, y, width, height, map) {
         const zone = CONFIG.zones[map];
-
         const normalizedX = clamp(x / width, 0, 1);
         const normalizedY = clamp(y / height, 0, 1);
 
-        // ---------------------------------------------------------
-        // LONGITUDE
-        // En Web Mercator, X reste linéaire avec la longitude.
-        // ---------------------------------------------------------
-        const lon =
-          zone.lonMin +
-          normalizedX * (zone.lonMax - zone.lonMin);
+        // Web Mercator : la longitude reste linéaire sur l'axe X.
+        const lon = zone.lonMin + normalizedX * (zone.lonMax - zone.lonMin);
 
-        // ---------------------------------------------------------
-        // LATITUDE
-        // En Web Mercator, Y n'est PAS linéaire avec la latitude.
-        // On interpole donc dans l'espace Mercator.
-        // ---------------------------------------------------------
+        // Web Mercator : la latitude doit être interpolée dans l'espace
+        // logarithmique Mercator puis reconvertie en degrés.
         const mercatorNorth = latitudeToMercator(zone.latMax);
         const mercatorSouth = latitudeToMercator(zone.latMin);
-
-        const mercatorY =
-          mercatorNorth +
-          normalizedY * (mercatorSouth - mercatorNorth);
-
+        const mercatorY = mercatorNorth + normalizedY * (mercatorSouth - mercatorNorth);
         const lat = mercatorToLatitude(mercatorY);
 
-        return {
-          lat,
-          lon
-        };
+        return { lat, lon };
       }
-
       function latitudeToMercator(latitude) {
-        // Limite théorique de Web Mercator
-        const clampedLatitude = clamp(
-          latitude,
-          -85.05112878,
-          85.05112878
-        );
-
-        const radians =
-          clampedLatitude * Math.PI / 180;
-
-        return Math.log(
-          Math.tan(
-            Math.PI / 4 + radians / 2
-          )
-        );
+        const safeLatitude = clamp(latitude, -85.05112878, 85.05112878);
+        const radians = safeLatitude * Math.PI / 180;
+        return Math.log(Math.tan(Math.PI / 4 + radians / 2));
       }
-
       function mercatorToLatitude(mercatorY) {
-        return (
-          Math.atan(Math.sinh(mercatorY)) *
-          180 /
-          Math.PI
-        );
+        return Math.atan(Math.sinh(mercatorY)) * 180 / Math.PI;
       }
-
 
       function drawImpact(context, x, y, size) {
         const radius = clamp(size * 0.052, 22, 80);
@@ -1909,26 +1881,39 @@
         const maxSide = Math.max(src.cols, src.rows);
         const scale = Math.min(1, CONFIG.detectionMaxSide / maxSide);
         let work = null;
-
         try {
           if (scale < 1) {
             work = new cv.Mat();
-            cv.resize(src, work, new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale)), 0, 0, cv.INTER_AREA);
+            cv.resize(
+              src,
+              work,
+              new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale)),
+              0,
+              0,
+              cv.INTER_AREA
+            );
           } else {
             work = src.clone();
           }
 
+          const qr = detectTopLeftQrCode(work);
           const markers = detectArucoMarkers(work);
-          if (markers.length < 4) return null;
-
-          // Les IDs valident que ce sont les bons marqueurs, mais la géométrie
-          // finale privilégie leur position réelle dans la photo.
           const byId = bestArucoMarkersById(markers);
-          const byPosition = buildArucoFrameFromPositions(byId, work.cols, work.rows);
-          const byRole = buildArucoFrameFromRoles(byId, work.cols, work.rows);
-          const frame = byPosition || byRole;
-          if (!frame) return null;
+          let frame = null;
 
+          // Nouvelle cible : QR en haut-gauche + ArUco 10, 20 et 30.
+          if (qr && byId.has(10) && byId.has(20) && byId.has(30)) {
+            frame = buildFrameFromQrAndAruco(qr, byId, work.cols, work.rows);
+          }
+
+          // Compatibilité avec l'ancienne cible à quatre ArUco.
+          if (!frame && byId.has(0) && byId.has(10) && byId.has(20) && byId.has(30)) {
+            frame =
+              buildArucoFrameFromRoles(byId, work.cols, work.rows) ||
+              buildArucoFrameFromPositions(byId, work.cols, work.rows);
+          }
+
+          if (!frame) return null;
           return {
             corners: frame.points.map((point) => ({
               x: point.x / scale,
@@ -1938,11 +1923,91 @@
             label: frame.label
           };
         } catch (error) {
-          console.warn("Détection ArUco échouée", error);
+          console.warn("Détection QR/ArUco échouée", error);
           return null;
         } finally {
           deleteMat(work);
         }
+      }
+
+      function detectTopLeftQrCode(src) {
+        if (typeof window.jsQR !== "function") return null;
+        let rgba = null;
+        try {
+          if (src.channels() === 4) {
+            rgba = src.clone();
+          } else {
+            rgba = new cv.Mat();
+            const code = src.channels() === 3 ? cv.COLOR_RGB2RGBA : cv.COLOR_GRAY2RGBA;
+            cv.cvtColor(src, rgba, code);
+          }
+
+          const pixels = new Uint8ClampedArray(
+            rgba.data.buffer,
+            rgba.data.byteOffset,
+            rgba.data.byteLength
+          );
+          const result = window.jsQR(pixels, rgba.cols, rgba.rows, {
+            inversionAttempts: "attemptBoth"
+          });
+          if (!result || !result.location) return null;
+
+          const location = result.location;
+          const corners = orderCorners([
+            { x: location.topLeftCorner.x, y: location.topLeftCorner.y },
+            { x: location.topRightCorner.x, y: location.topRightCorner.y },
+            { x: location.bottomRightCorner.x, y: location.bottomRightCorner.y },
+            { x: location.bottomLeftCorner.x, y: location.bottomLeftCorner.y }
+          ]);
+          const center = centroid(corners);
+
+          // Le QR remplace uniquement le repère haut-gauche. Ce filtre évite
+          // qu'un autre QR présent sur la carte soit utilisé comme coin.
+          if (center.x > src.cols * 0.48 || center.y > src.rows * 0.48) return null;
+          if (!isPlausibleArucoQuad(corners, src.cols, src.rows)) return null;
+
+          return {
+            text: String(result.data || ""),
+            corners,
+            center,
+            frameCorner: corners[0]
+          };
+        } finally {
+          deleteMat(rgba);
+        }
+      }
+
+      function buildFrameFromQrAndAruco(qr, byId, width, height) {
+        const topRight = byId.get(10);
+        const bottomRight = byId.get(20);
+        const bottomLeft = byId.get(30);
+        if (!qr || !topRight || !bottomRight || !bottomLeft) return null;
+
+        // Vérification grossière de l'organisation spatiale avant homographie.
+        if (qr.center.x >= topRight.center.x || qr.center.y >= bottomLeft.center.y) return null;
+        if (bottomLeft.center.x >= bottomRight.center.x || topRight.center.y >= bottomRight.center.y) return null;
+
+        const points = orderCorners([
+          qr.frameCorner,
+          selectArucoFrameCorner(topRight, "topRight"),
+          selectArucoFrameCorner(bottomRight, "bottomRight"),
+          selectArucoFrameCorner(bottomLeft, "bottomLeft")
+        ]);
+        if (!isValidQuad(points, width, height)) return null;
+
+        const markerScore = (topRight.score + bottomRight.score + bottomLeft.score) / 3;
+        const confidence = clamp(
+          markerScore * 0.66 + geometryScore(points, width, height) * 0.34,
+          0,
+          1
+        );
+        if (confidence < 0.60) return null;
+
+        return {
+          points,
+          confidence,
+          label: "QR haut-gauche + ArUco 10/20/30"
+        };
       }
 
       function detectArucoMarkers(src) {
@@ -3071,6 +3136,15 @@
         return state.cvPromise;
       }
 
+      function ensureJsQr() {
+        if (typeof window.jsQR === "function") return Promise.resolve();
+        if (state.jsQrPromise) return state.jsQrPromise;
+        state.jsQrPromise = loadScript(CONFIG.jsQrUrl).catch((error) => {
+          state.jsQrPromise = null;
+          throw error;
+        });
+        return state.jsQrPromise;
+      }
       function ensureHeicConverter() {
         if (window.heic2any) return Promise.resolve();
         if (state.heicPromise) return state.heicPromise;
