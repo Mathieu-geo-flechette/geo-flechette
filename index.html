@@ -1403,7 +1403,7 @@
 
         const conclusion = document.createElement("p");
         conclusion.textContent =
-          "Appuyez sur « Reprendre la photo » après avoir corrigé le cadrage.";
+          "Appuyez sur « Reprendre la photo » après avoir corrigé le cadrage. Si les quatre ArUco restent difficiles à détecter, utilisez « Reprendre les coins » pour sélectionner manuellement les quatre coins extérieurs de la cible.";
 
         root.append(title, intro, instructions, conclusion);
         els.output.replaceChildren(root);
@@ -2252,25 +2252,59 @@
       }
 
       function dedupeArucoMarkers(markers) {
-        const sorted = markers.slice().sort((a, b) => b.score - a.score || b.area - a.area);
+        /*
+          Plusieurs contours imbriqués peuvent être décodés pour un même
+          marqueur. Le contour intérieur a souvent un score légèrement
+          supérieur, mais il réduit le cadre final.
+
+          On regroupe donc les détections du même ID situées au même endroit
+          et on conserve en priorité le quadrilatère de plus grande aire :
+          c'est le bord extérieur du marqueur.
+        */
+        const sorted = markers.slice().sort((a, b) =>
+          b.area - a.area || b.score - a.score
+        );
         const unique = [];
 
         for (const marker of sorted) {
-          const duplicate = unique.some((item) => distance(item.center, marker.center) < Math.sqrt(Math.max(item.area, marker.area)) * 0.36);
-          if (!duplicate) unique.push(marker);
+          const duplicate = unique.some((item) => {
+            if (item.id !== marker.id) return false;
+
+            const referenceSize = Math.sqrt(
+              Math.max(item.area, marker.area)
+            );
+
+            return distance(item.center, marker.center) <
+              referenceSize * 0.42;
+          });
+
+          if (!duplicate) {
+            unique.push(marker);
+          }
         }
 
         return unique;
       }
 
       function bestArucoMarkersById(markers) {
-        const expectedIds = new Set(ARUCO_FRAME_ROLES.map((item) => item.id));
+        const expectedIds = new Set(
+          ARUCO_FRAME_ROLES.map((item) => item.id)
+        );
         const byId = new Map();
 
         for (const marker of markers) {
           if (!expectedIds.has(marker.id)) continue;
+
           const previous = byId.get(marker.id);
-          if (!previous || marker.score > previous.score || (marker.score === previous.score && marker.area > previous.area)) {
+
+          if (
+            !previous ||
+            marker.area > previous.area * 1.04 ||
+            (
+              Math.abs(marker.area - previous.area) <= previous.area * 0.04 &&
+              marker.score > previous.score
+            )
+          ) {
             byId.set(marker.id, marker);
           }
         }
@@ -2323,6 +2357,8 @@
       }
 
       function selectArucoFrameCorner(marker, role) {
+        // marker.corners correspond désormais au plus grand contour décodé
+        // du marqueur, donc à son bord extérieur et non à un carré intérieur.
         const corners = orderCorners(marker.corners);
         if (role === "topLeft") return corners[0];
         if (role === "topRight") return corners[1];
