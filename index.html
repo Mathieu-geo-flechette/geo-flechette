@@ -1258,11 +1258,7 @@
 
         try {
           await ensureOpenCv();
-          // jsQR détecte le QR haut-gauche. Si son chargement échoue,
-          // les anciennes cibles 4 ArUco et les fallbacks restent utilisables.
-          await ensureJsQr().catch((error) => {
-            console.warn("Détecteur QR indisponible", error);
-          });
+          await ensureJsQr();
           if (serial !== state.runSerial) return;
 
           const sourceCanvas = buildPhotoCanvas();
@@ -1793,28 +1789,10 @@
 
       function pointToCoordinates(x, y, width, height, map) {
         const zone = CONFIG.zones[map];
-        const normalizedX = clamp(x / width, 0, 1);
-        const normalizedY = clamp(y / height, 0, 1);
-
-        // Web Mercator : la longitude reste linéaire sur l'axe X.
-        const lon = zone.lonMin + normalizedX * (zone.lonMax - zone.lonMin);
-
-        // Web Mercator : la latitude doit être interpolée dans l'espace
-        // logarithmique Mercator puis reconvertie en degrés.
-        const mercatorNorth = latitudeToMercator(zone.latMax);
-        const mercatorSouth = latitudeToMercator(zone.latMin);
-        const mercatorY = mercatorNorth + normalizedY * (mercatorSouth - mercatorNorth);
-        const lat = mercatorToLatitude(mercatorY);
-
-        return { lat, lon };
-      }
-      function latitudeToMercator(latitude) {
-        const safeLatitude = clamp(latitude, -85.05112878, 85.05112878);
-        const radians = safeLatitude * Math.PI / 180;
-        return Math.log(Math.tan(Math.PI / 4 + radians / 2));
-      }
-      function mercatorToLatitude(mercatorY) {
-        return Math.atan(Math.sinh(mercatorY)) * 180 / Math.PI;
+        return {
+          lon: zone.lonMin + (x / width) * (zone.lonMax - zone.lonMin),
+          lat: zone.latMax - (y / height) * (zone.latMax - zone.latMin)
+        };
       }
 
       function drawImpact(context, x, y, size) {
@@ -1881,13 +1859,17 @@
         const maxSide = Math.max(src.cols, src.rows);
         const scale = Math.min(1, CONFIG.detectionMaxSide / maxSide);
         let work = null;
+
         try {
           if (scale < 1) {
             work = new cv.Mat();
             cv.resize(
               src,
               work,
-              new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale)),
+              new cv.Size(
+                Math.round(src.cols * scale),
+                Math.round(src.rows * scale)
+              ),
               0,
               0,
               cv.INTER_AREA
@@ -1896,24 +1878,45 @@
             work = src.clone();
           }
 
-          const qr = detectTopLeftQrCode(work);
+          // Nouvelle cible :
+          // QR = haut gauche, ArUco 10 = haut droit,
+          // ArUco 20 = bas droit, ArUco 30 = bas gauche.
+          const qr = detectTopLeftQRCode(work);
           const markers = detectArucoMarkers(work);
           const byId = bestArucoMarkersById(markers);
+
           let frame = null;
 
-          // Nouvelle cible : QR en haut-gauche + ArUco 10, 20 et 30.
           if (qr && byId.has(10) && byId.has(20) && byId.has(30)) {
-            frame = buildFrameFromQrAndAruco(qr, byId, work.cols, work.rows);
+            frame = buildFrameFromQrAndAruco(
+              qr,
+              byId,
+              work.cols,
+              work.rows
+            );
           }
 
-          // Compatibilité avec l'ancienne cible à quatre ArUco.
-          if (!frame && byId.has(0) && byId.has(10) && byId.has(20) && byId.has(30)) {
+          // Compatibilité conservée avec l'ancienne cible 4 ArUco.
+          if (
+            !frame &&
+            byId.has(0) &&
+            byId.has(10) &&
+            byId.has(20) &&
+            byId.has(30)
+          ) {
             frame =
-              buildArucoFrameFromRoles(byId, work.cols, work.rows) ||
-              buildArucoFrameFromPositions(byId, work.cols, work.rows);
+              buildArucoFrameFromPositions(byId, work.cols, work.rows) ||
+              buildArucoFrameFromRoles(byId, work.cols, work.rows);
           }
 
-          if (!frame) return null;
+          if (!frame) {
+            console.info("Repères incomplets", {
+              qr: Boolean(qr),
+              arucoIds: Array.from(byId.keys())
+            });
+            return null;
+          }
+
           return {
             corners: frame.points.map((point) => ({
               x: point.x / scale,
@@ -1923,23 +1926,29 @@
             label: frame.label
           };
         } catch (error) {
-          console.warn("Détection QR/ArUco échouée", error);
+          console.warn("Détection QR + ArUco échouée", error);
           return null;
         } finally {
           deleteMat(work);
         }
       }
 
-      function detectTopLeftQrCode(src) {
-        if (typeof window.jsQR !== "function") return null;
+      function detectTopLeftQRCode(src) {
+        if (typeof window.jsQR !== "function") {
+          console.warn("jsQR n'est pas chargé");
+          return null;
+        }
+
         let rgba = null;
         try {
+          rgba = new cv.Mat();
+
           if (src.channels() === 4) {
-            rgba = src.clone();
+            src.copyTo(rgba);
+          } else if (src.channels() === 3) {
+            cv.cvtColor(src, rgba, cv.COLOR_RGB2RGBA);
           } else {
-            rgba = new cv.Mat();
-            const code = src.channels() === 3 ? cv.COLOR_RGB2RGBA : cv.COLOR_GRAY2RGBA;
-            cv.cvtColor(src, rgba, code);
+            cv.cvtColor(src, rgba, cv.COLOR_GRAY2RGBA);
           }
 
           const pixels = new Uint8ClampedArray(
@@ -1947,29 +1956,67 @@
             rgba.data.byteOffset,
             rgba.data.byteLength
           );
-          const result = window.jsQR(pixels, rgba.cols, rgba.rows, {
-            inversionAttempts: "attemptBoth"
-          });
-          if (!result || !result.location) return null;
+
+          const result = window.jsQR(
+            pixels,
+            rgba.cols,
+            rgba.rows,
+            { inversionAttempts: "attemptBoth" }
+          );
+
+          if (!result || !result.location) {
+            console.info("QR haut gauche non détecté");
+            return null;
+          }
 
           const location = result.location;
           const corners = orderCorners([
-            { x: location.topLeftCorner.x, y: location.topLeftCorner.y },
-            { x: location.topRightCorner.x, y: location.topRightCorner.y },
-            { x: location.bottomRightCorner.x, y: location.bottomRightCorner.y },
-            { x: location.bottomLeftCorner.x, y: location.bottomLeftCorner.y }
+            {
+              x: location.topLeftCorner.x,
+              y: location.topLeftCorner.y
+            },
+            {
+              x: location.topRightCorner.x,
+              y: location.topRightCorner.y
+            },
+            {
+              x: location.bottomRightCorner.x,
+              y: location.bottomRightCorner.y
+            },
+            {
+              x: location.bottomLeftCorner.x,
+              y: location.bottomLeftCorner.y
+            }
           ]);
+
           const center = centroid(corners);
 
-          // Le QR remplace uniquement le repère haut-gauche. Ce filtre évite
-          // qu'un autre QR présent sur la carte soit utilisé comme coin.
-          if (center.x > src.cols * 0.48 || center.y > src.rows * 0.48) return null;
-          if (!isPlausibleArucoQuad(corners, src.cols, src.rows)) return null;
+          // Protection contre un éventuel autre QR imprimé sur la carte.
+          // Le repère attendu doit se trouver dans la moitié haute-gauche.
+          if (
+            center.x > src.cols * 0.52 ||
+            center.y > src.rows * 0.52
+          ) {
+            console.warn("QR trouvé hors de la zone haut-gauche");
+            return null;
+          }
+
+          const qrArea = polygonArea(corners);
+          const imageArea = src.cols * src.rows;
+          if (
+            qrArea < imageArea * 0.00012 ||
+            qrArea > imageArea * 0.14
+          ) {
+            console.warn("Taille du QR incohérente");
+            return null;
+          }
 
           return {
             text: String(result.data || ""),
             corners,
             center,
+            // Le contour de la zone géographique part du coin extérieur
+            // haut-gauche du QR, comme auparavant avec l'ArUco 0.
             frameCorner: corners[0]
           };
         } finally {
@@ -1978,29 +2025,40 @@
       }
 
       function buildFrameFromQrAndAruco(qr, byId, width, height) {
-        const topRight = byId.get(10);
-        const bottomRight = byId.get(20);
-        const bottomLeft = byId.get(30);
-        if (!qr || !topRight || !bottomRight || !bottomLeft) return null;
+        const marker10 = byId.get(10);
+        const marker20 = byId.get(20);
+        const marker30 = byId.get(30);
 
-        // Vérification grossière de l'organisation spatiale avant homographie.
-        if (qr.center.x >= topRight.center.x || qr.center.y >= bottomLeft.center.y) return null;
-        if (bottomLeft.center.x >= bottomRight.center.x || topRight.center.y >= bottomRight.center.y) return null;
+        if (!qr || !marker10 || !marker20 || !marker30) return null;
+
+        // Vérification de l'ordre global des quatre repères.
+        if (qr.center.x >= marker10.center.x) return null;
+        if (qr.center.y >= marker30.center.y) return null;
+        if (marker10.center.y >= marker20.center.y) return null;
+        if (marker30.center.x >= marker20.center.x) return null;
 
         const points = orderCorners([
           qr.frameCorner,
-          selectArucoFrameCorner(topRight, "topRight"),
-          selectArucoFrameCorner(bottomRight, "bottomRight"),
-          selectArucoFrameCorner(bottomLeft, "bottomLeft")
+          selectArucoFrameCorner(marker10, "topRight"),
+          selectArucoFrameCorner(marker20, "bottomRight"),
+          selectArucoFrameCorner(marker30, "bottomLeft")
         ]);
-        if (!isValidQuad(points, width, height)) return null;
 
-        const markerScore = (topRight.score + bottomRight.score + bottomLeft.score) / 3;
+        if (!isValidQuad(points, width, height)) {
+          console.warn("Cadre QR + ArUco géométriquement invalide");
+          return null;
+        }
+
+        const averageMarkerScore =
+          (marker10.score + marker20.score + marker30.score) / 3;
+
         const confidence = clamp(
-          markerScore * 0.66 + geometryScore(points, width, height) * 0.34,
+          averageMarkerScore * 0.72 +
+          geometryScore(points, width, height) * 0.28,
           0,
           1
         );
+
         if (confidence < 0.60) return null;
 
         return {
@@ -3137,14 +3195,24 @@
       }
 
       function ensureJsQr() {
-        if (typeof window.jsQR === "function") return Promise.resolve();
+        if (typeof window.jsQR === "function") {
+          return Promise.resolve();
+        }
+
         if (state.jsQrPromise) return state.jsQrPromise;
+
         state.jsQrPromise = loadScript(CONFIG.jsQrUrl).catch((error) => {
           state.jsQrPromise = null;
-          throw error;
+          throw friendlyError(
+            "Détection QR indisponible",
+            "Le lecteur QR n'a pas pu se charger. Vérifiez la connexion internet puis rechargez la page.",
+            error
+          );
         });
+
         return state.jsQrPromise;
       }
+
       function ensureHeicConverter() {
         if (window.heic2any) return Promise.resolve();
         if (state.heicPromise) return state.heicPromise;
